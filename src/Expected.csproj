@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+<PropertyGroup>
+  <PackageId>Expected</PackageId>
+  <Version>0.1.0</Version>
+  <Authors>jipg</Authors>
+  <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  <RepositoryUrl>https://github.com/jipgg/Expected</RepositoryUrl>
+  <RepositoryType>git</RepositoryType>
+
+  <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  <IsPackable>true</IsPackable>
+</PropertyGroup>
+
+</Project>
