@@ -8,7 +8,7 @@
 
 <PropertyGroup>
   <PackageId>Expected</PackageId>
-  <Version>0.1.3</Version>
+  <Version>0.1.4</Version>
   <Authors>jipg</Authors>
   <PackageLicenseExpression>MIT</PackageLicenseExpression>
   <RepositoryUrl>https://github.com/jipgg/Expected</RepositoryUrl>

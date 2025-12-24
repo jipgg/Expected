@@ -1,14 +1,19 @@
 namespace Expected.Fluent;
 
 public static class ValueExtensions {
-   public readonly ref struct AsExpectedProxy<T>(scoped in T value) {
+   public readonly ref struct WithValue<T>(scoped in T value) {
       internal readonly T _value = value;
-      public Expected<T, E> WithErrorBeing<E>() => new(_value);
+      public Expected<T, E> WithErrorType<E>() => new(_value);
    }
-   public static AsExpectedProxy<T> AsExpected<T>(this T value) => new(value);
+   public readonly ref struct WithError<E>(scoped in Unexpected<E> unexpected) {
+      internal readonly Unexpected<E> _error = unexpected;
+      public Expected<T, E> WithValueType<T>() => _error;
+   }
+   public static WithValue<T> MakeExpected<T>(this T value) => new(value);
+   public static WithError<E> MakeExpected<E>(this in Unexpected<E> u) => new(u);
    public static Unexpected<E> AsUnexpected<E>(this E error) => new(error);
-   public static Expected<T, E> AsExpected<T, E>(this T value) => new(value);
-   public static Optional<T> AsOptional<T>(this T value) => new(value);
+   public static Optional<T> AsOptional<T>(this T? value) => value is null ? default(Optional<T>) : new(value);
+   public static Optional<T> AsOptional<T, E>(this Expected<T, E> expected) => expected ? new((T)expected) : default;
 }
 
 public static class ValueExtensionsWhereStruct {
