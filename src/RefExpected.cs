@@ -29,6 +29,8 @@ where E : allows ref struct {
       Value = default;
       Error = u.Error;
    }
+   public V ValueOr(in V v) => HasValue ? Value : v;
+   public E ErrorOr(in E e) => HasError ? Error : e;
    public RefExpected<R, E> Transform<R>(Func<V, R> f)
    where R : allows ref struct
        => HasValue ? f(Value) : new Unexpected<E>(Error);

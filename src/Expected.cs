@@ -27,6 +27,8 @@ public readonly struct Expected<V, E> {
       Value = default;
       Error = u.Error;
    }
+   public V ValueOr(in V v) => HasValue ? Value : v;
+   public E ErrorOr(in E e) => HasError ? Error : e;
    public Expected<R, E> Transform<R>(Func<V, R> tr)
        => HasValue ? tr(Value) : new Unexpected<E>(Error);
 

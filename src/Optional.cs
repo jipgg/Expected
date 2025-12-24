@@ -12,6 +12,7 @@ public readonly struct Optional<V> {
       Value = value;
       HasValue = true;
    }
+   public V ValueOr(in V v) => HasValue ? Value : v;
    public static implicit operator Optional<V>(in V v) => new(v);
    public Optional<R> Transform<R>(Func<V, R> f)
        => HasValue ? new(f(Value)) : default;

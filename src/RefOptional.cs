@@ -15,8 +15,8 @@ where V : allows ref struct {
       Value = value;
       HasValue = true;
    }
-   public static implicit operator RefOptional<V>(scoped in V v) => new(v);
    public V ValueOr(in V v) => HasValue ? Value : v;
+   public static implicit operator RefOptional<V>(scoped in V v) => new(v);
    public RefOptional<R> Transform<R>(Func<V, R> f) where R : allows ref struct
        => HasValue ? new(f(Value)) : default;
 
