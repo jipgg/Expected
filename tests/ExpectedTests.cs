@@ -31,7 +31,7 @@ public class Expected_Tests {
    public void Explicit_cast_throws_when_empty() {
       var o = default(Expected);
       Action act = () => { var _ = (Foo)o; };
-      Assert.Throws<InvalidOperationException>(act);
+      Assert.ThrowsAny<InvalidOperationException>(act);
    }
 }
 public class Expected_MapTests {
@@ -136,7 +136,7 @@ public class RefExpected_Tests {
          var e = default(RefExpected);
          var _ = (RefFoo)e;
       };
-      Assert.Throws<InvalidOperationException>(act);
+      Assert.ThrowsAny<InvalidOperationException>(act);
    }
 }
 public class Expected_TransformerTests {

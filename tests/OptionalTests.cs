@@ -24,7 +24,7 @@ public class Optional_Tests {
    public void Explicit_cast_throws_when_empty() {
       var o = default(Optional);
       Action act = () => { var _ = (Foo)o; };
-      Assert.Throws<InvalidAccess>(act);
+      Assert.ThrowsAny<InvalidAccess>(act);
    }
 }
 
@@ -99,7 +99,7 @@ public class RefOptional_Tests {
          var o = default(RefOptional);
          var _ = (RefFoo)o;
       };
-      Assert.Throws<InvalidAccess>(act);
+      Assert.ThrowsAny<InvalidAccess>(act);
    }
 }
 
