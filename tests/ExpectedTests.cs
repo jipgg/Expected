@@ -31,14 +31,14 @@ public class Expected_Tests {
    public void Explicit_cast_throws_when_empty() {
       var o = default(Expected);
       Action act = () => { var _ = (Foo)o; };
-      Assert.Throws<InvalidExpectedAccessException>(act);
+      Assert.Throws<InvalidOperationException>(act);
    }
 }
 public class Expected_MapTests {
    [Fact]
    public void Map_applies_only_on_value() {
       var e = new Expected(new Foo(10))
-          .Map(f => new Foo(f.X * 2));
+          .Transform(f => new Foo(f.X * 2));
 
       Assert.True(e.HasValue);
       Assert.Equal(20, e.Value.X);
@@ -48,7 +48,7 @@ public class Expected_MapTests {
    public void Map_does_not_apply_on_error() {
       var e = new Expected(
           new Unexpected<Bar>(new("err"))
-      ).Map(f => new Foo(f.X * 2));
+      ).Transform(f => new Foo(f.X * 2));
 
       Assert.True(e.HasError);
       Assert.Equal("err", e.Error.Msg);
@@ -58,7 +58,7 @@ public class Expected_MapTests {
    public void MapError_applies_only_on_error() {
       var e = new Expected(
           new Unexpected<Bar>(new Bar("abc"))
-      ).MapError(err => new Bar("xyz"));
+      ).TransformError(err => new Bar("xyz"));
 
       Assert.True(e.HasError);
       Assert.Equal("xyz", e.Error.Msg);
@@ -136,14 +136,37 @@ public class RefExpected_Tests {
          var e = default(RefExpected);
          var _ = (RefFoo)e;
       };
-      Assert.Throws<InvalidExpectedAccessException>(act);
+      Assert.Throws<InvalidOperationException>(act);
+   }
+}
+public class Expected_TransformerTests {
+   struct Tr : ITransformer<Foo, Foo> {
+      public Foo Transform(Foo f) => new Foo(f.X * 2);
+   }
+   struct TrExp : ITransformer<Foo, Expected> {
+      public Expected Transform(Foo f) => new(new Foo(f.X * 2));
+   }
+
+   [Fact]
+   public void Map_with_ITransformer_works() {
+      var e = new Expected(new Foo(4))
+          .Transform<Tr, Foo>(default);
+
+      Assert.Equal(8, e.Value.X);
+   }
+
+   [Fact]
+   public void AndThen_with_ITransformer_works() {
+      var e = new Expected(new Foo(4))
+          .AndThen<TrExp, Foo>(default);
+      Assert.Equal(8, e.Value.X);
    }
 }
 public class RefExpected_MapTests {
    [Fact]
    public void Map_applies_only_on_value() {
       var e = new RefExpected(new RefFoo(10))
-          .Map(f => new RefFoo(f.X * 2));
+          .Transform(f => new RefFoo(f.X * 2));
 
       Assert.True(e.HasValue);
       Assert.Equal(20, e.Value.X);
@@ -153,7 +176,7 @@ public class RefExpected_MapTests {
    public void Map_does_not_apply_on_error() {
       var e = new RefExpected(
           new Unexpected<RefBar>(new("err"))
-      ).Map(f => new RefFoo(f.X * 2));
+      ).Transform(f => new RefFoo(f.X * 2));
 
       Assert.True(e.HasError);
       Assert.Equal("err", e.Error.Msg);
@@ -163,7 +186,7 @@ public class RefExpected_MapTests {
    public void MapError_applies_only_on_error() {
       var e = new RefExpected(
           new Unexpected<RefBar>(new("abc"))
-      ).MapError(err => new RefBar("xyz"));
+      ).TransformError(err => new RefBar("xyz"));
 
       Assert.True(e.HasError);
       Assert.Equal("xyz", e.Error.Msg);
@@ -205,5 +228,28 @@ public class RefExpected_BindTests {
           .OrElse(_ => new RefExpected(new RefFoo(2)));
 
       Assert.Equal(1, e.Value.X);
+   }
+}
+public class RefExpected_TransformerTests {
+   struct Tr : ITransformer<RefFoo, RefFoo> {
+      public RefFoo Transform(RefFoo f) => new RefFoo(f.X * 2);
+   }
+   struct TrExp : ITransformer<RefFoo, RefExpected> {
+      public RefExpected Transform(RefFoo f) => new(new RefFoo(f.X * 2));
+   }
+
+   [Fact]
+   public void Map_with_ITransformer_works() {
+      var e = new RefExpected(new RefFoo(4))
+          .Transform<Tr, RefFoo>(default);
+
+      Assert.Equal(8, e.Value.X);
+   }
+
+   [Fact]
+   public void AndThen_with_ITransformer_works() {
+      var e = new RefExpected(new RefFoo(4))
+          .AndThen<TrExp, RefFoo>(default);
+      Assert.Equal(8, e.Value.X);
    }
 }

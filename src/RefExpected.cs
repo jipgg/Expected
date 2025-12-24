@@ -1,9 +1,9 @@
 namespace Expected;
 
-public readonly ref struct RefExpected<T, E>
-where T : allows ref struct
+public readonly ref struct RefExpected<V, E>
+where V : allows ref struct
 where E : allows ref struct {
-   public readonly T? Value { get; }
+   public readonly V? Value { get; }
    public readonly E? Error { get; }
 
    [MemberNotNullWhen(true, nameof(Value))]
@@ -18,8 +18,7 @@ where E : allows ref struct {
    }
 
    [MethodImpl(AggressiveInlining)]
-   [OverloadResolutionPriority(1)]
-   public RefExpected(scoped in T value) {
+   public RefExpected(scoped in V value) {
       HasValue = true;
       Error = default;
       Value = value;
@@ -30,37 +29,62 @@ where E : allows ref struct {
       Value = default;
       Error = u.Error;
    }
-   public RefExpected<X, E> Map<X>(Func<T, X> f)
-   where X : allows ref struct
+   public RefExpected<R, E> Transform<R>(Func<V, R> f)
+   where R : allows ref struct
        => HasValue ? f(Value) : new Unexpected<E>(Error);
 
-   public RefExpected<T, X> MapError<X>(Func<E, X> f)
-   where X : allows ref struct
-       => HasError ? new Unexpected<X>(f(Error)) : Value;
+   [MethodImpl(AggressiveInlining)]
+   public RefExpected<R, E> Transform<Transformer, R>(in Transformer f)
+   where R : allows ref struct
+   where Transformer: ITransformer<V, R>, allows ref struct
+       => HasValue ? f.Transform(Value) : new Unexpected<E>(Error);
 
-   public RefExpected<T, E> AndThen(Func<T, RefExpected<T, E>> f)
+   public RefExpected<V, R> TransformError<R>(Func<E, R> f)
+   where R : allows ref struct
+       => HasError ? new Unexpected<R>(f(Error)) : Value;
+
+   [MethodImpl(AggressiveInlining)]
+   public RefExpected<V, R> TransformError<Transformer, R>(in Transformer f)
+   where R : allows ref struct
+   where Transformer : ITransformer<E, R>
+       => HasError ? new Unexpected<R>(f.Transform(Error)) : Value;
+
+   public RefExpected<V, E> AndThen(Func<V, RefExpected<V, E>> f)
        => HasValue ? f(Value) : this;
-   public RefExpected<X, E> AndThen<X>(Func<T, RefExpected<X, E>> f)
+
+   public RefExpected<R, E> AndThen<R>(Func<V, RefExpected<R, E>> f)
        => HasValue ? f(Value) : new Unexpected<E>(Error);
 
-   public RefExpected<T, E> OrElse(Func<E, RefExpected<T, E>> f)
+   [MethodImpl(AggressiveInlining)]
+   public RefExpected<R, E> AndThen<Transformer, R>(in Transformer f)
+   where R : allows ref struct
+   where Transformer: ITransformer<V, RefExpected<R, E>>
+      => HasValue ? f.Transform(Value) : new Unexpected<E>(Error);
+
+   public RefExpected<V, E> OrElse(Func<E, RefExpected<V, E>> f)
        => HasError ? f(Error) : this;
-   public RefExpected<T, X> OrElse<X>(Func<E, RefExpected<T, X>> f) where X : allows ref struct
+   public RefExpected<V, R> OrElse<R>(Func<E, RefExpected<V, R>> f) where R : allows ref struct
        => HasError ? f(Error) : Value;
 
    [MethodImpl(AggressiveInlining)]
-   public static implicit operator RefExpected<T, E>(scoped in T v) => new(v);
+   public RefExpected<V, R> OrElse<Transformer, R>(in Transformer f)
+   where R : allows ref struct
+   where Transformer: ITransformer<E, RefExpected<V, R>>
+      => HasError ? f.Transform(Error) : Value;
 
    [MethodImpl(AggressiveInlining)]
-   public static implicit operator RefExpected<T, E>(scoped in Unexpected<E> u) => new(u);
+   public static implicit operator RefExpected<V, E>(scoped in V v) => new(v);
 
    [MethodImpl(AggressiveInlining)]
-   public static bool operator true(in RefExpected<T, E> r) => r.HasValue;
-   [MethodImpl(AggressiveInlining)]
-   public static bool operator false(in RefExpected<T, E> r) => r.HasError;
-   [MethodImpl(AggressiveInlining)]
-   public static bool operator !(in RefExpected<T, E> r) => r.HasError;
+   public static implicit operator RefExpected<V, E>(scoped in Unexpected<E> u) => new(u);
 
-   public static explicit operator T(scoped in RefExpected<T, E> e)
-      => e.HasValue ? e.Value : throw new InvalidExpectedAccessException();
+   [MethodImpl(AggressiveInlining)]
+   public static bool operator true(in RefExpected<V, E> r) => r.HasValue;
+   [MethodImpl(AggressiveInlining)]
+   public static bool operator false(in RefExpected<V, E> r) => r.HasError;
+   [MethodImpl(AggressiveInlining)]
+   public static bool operator !(in RefExpected<V, E> r) => r.HasError;
+
+   public static explicit operator V(scoped in RefExpected<V, E> e)
+      => e.HasValue ? e.Value : throw new InvalidOperationException();
 }

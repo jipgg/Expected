@@ -1,9 +1,9 @@
 namespace Expected;
 
 public static class ExpectedExtensions {
-   public static Expected<V, E> AsExpected<V, E>(this RefExpected<V, E> e)
+   public static Expected<V, E> AsExpected<V, E>(this in RefExpected<V, E> e)
       => e.HasValue ? e.Value : new Unexpected<E>(e.Error);
-   public static RefExpected<V, E> AsRefExpected<V, E>(this Expected<V, E> e)
+   public static RefExpected<V, E> AsRefExpected<V, E>(this in Expected<V, E> e)
       => e.HasValue ? e.Value : new Unexpected<E>(e.Error);
 }
 

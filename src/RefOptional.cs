@@ -1,8 +1,8 @@
 namespace Expected;
 
-public readonly ref struct RefOptional<T>
-where T : allows ref struct {
-   public readonly T? Value { get; }
+public readonly ref struct RefOptional<V>
+where V : allows ref struct {
+   public readonly V? Value { get; }
 
    [MemberNotNullWhen(true, nameof(Value))]
    public bool HasValue { get; }
@@ -11,32 +11,37 @@ where T : allows ref struct {
       Value = default!;
       HasValue = false;
    }
-   public RefOptional(scoped in T value) {
+   public RefOptional(scoped in V value) {
       Value = value;
       HasValue = true;
    }
-   public static implicit operator RefOptional<T>(scoped in T v) => new(v);
-   public bool TryValue([NotNullWhen(true)] out T? value) {
-      if (HasValue) {
-         value = Value!;
-         return true;
-      }
-      value = default;
-      return false;
-   }
-   public RefOptional<X> Map<X>(Func<T, X> f) where X : allows ref struct
+   public static implicit operator RefOptional<V>(scoped in V v) => new(v);
+   public V ValueOr(in V v) => HasValue ? Value : v;
+   public RefOptional<R> Transform<R>(Func<V, R> f) where R : allows ref struct
        => HasValue ? new(f(Value)) : default;
 
-   public RefOptional<T> AndThen(Func<T, RefOptional<T>> f)
+   [MethodImpl(AggressiveInlining)]
+   public RefOptional<R> Transform<Transformer, R>(in Transformer f)
+   where R : allows ref struct
+   where Transformer: ITransformer<V, R>, allows ref struct
+       => HasValue ? new(f.Transform(Value)) : default;
+
+   public RefOptional<V> AndThen(Func<V, RefOptional<V>> f)
        => HasValue ? f(Value) : this;
 
-   public RefOptional<X> AndThen<X>(Func<T, RefOptional<X>> f) where X : allows ref struct
+   public RefOptional<R> AndThen<R>(Func<V, RefOptional<R>> f) where R : allows ref struct
        => HasValue ? f(Value) : default;
 
-   public static bool operator true(in RefOptional<T> o) => o.HasValue;
-   public static bool operator false(in RefOptional<T> o) => !o.HasValue;
-   public static bool operator !(in RefOptional<T> o) => !o.HasValue;
+   [MethodImpl(AggressiveInlining)]
+   public RefOptional<R> AndThen<Transform, R>(in Transform f)
+   where R : allows ref struct
+   where Transform: ITransformer<V, RefOptional<R>>
+      => HasValue ? f.Transform(Value) : default;
 
-   public static explicit operator T(scoped in RefOptional<T> o)
-      => o.HasValue ? o.Value! : throw new InvalidOptionalAccessException();
+   public static bool operator true(in RefOptional<V> o) => o.HasValue;
+   public static bool operator false(in RefOptional<V> o) => !o.HasValue;
+   public static bool operator !(in RefOptional<V> o) => !o.HasValue;
+
+   public static explicit operator V(scoped in RefOptional<V> o)
+      => o.HasValue ? o.Value! : throw new InvalidOperationException();
 }

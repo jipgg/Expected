@@ -4,7 +4,7 @@ namespace Tests;
 
 using Optional = Optional<Foo>;
 using RefOptional = RefOptional<RefFoo>;
-using InvalidAccess = InvalidOptionalAccessException;
+using InvalidAccess = InvalidOperationException;
 
 public class Optional_Tests {
    [Fact]
@@ -32,7 +32,7 @@ public class Optional_MapTests {
    [Fact]
    public void Map_applies_only_when_has_value() {
       var o = new Optional(new Foo(10))
-          .Map(f => new Foo(f.X * 2));
+          .Transform(f => new Foo(f.X * 2));
 
       Assert.True(o.HasValue);
       Assert.Equal(20, o.Value.X);
@@ -41,7 +41,7 @@ public class Optional_MapTests {
    [Fact]
    public void Map_skips_when_empty() {
       var o = default(Optional)
-          .Map(f => new Foo(f.X * 2));
+          .Transform(f => new Foo(f.X * 2));
 
       Assert.False(o.HasValue);
    }
@@ -107,7 +107,7 @@ public class RefOptional_MapTests {
    [Fact]
    public void Map_applies_only_when_has_value() {
       var o = new RefOptional(new RefFoo(10))
-          .Map(f => new RefFoo(f.X * 2));
+          .Transform(f => new RefFoo(f.X * 2));
 
       Assert.True(o.HasValue);
       Assert.Equal(20, o.Value.X);
@@ -116,7 +116,7 @@ public class RefOptional_MapTests {
    [Fact]
    public void Map_skips_when_empty() {
       var o = default(RefOptional)
-          .Map(f => new RefFoo(f.X * 2));
+          .Transform(f => new RefFoo(f.X * 2));
 
       Assert.False(o.HasValue);
    }
