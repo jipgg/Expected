@@ -1,4 +1,9 @@
+using static Expected.UnexpectedFunction;
+using Expected;
 namespace Tests;
+
+record ObjFoo(int X);
+record ObjBar(string? Msg);
 
 readonly record struct Foo(int X);
 readonly record struct Bar(string? Msg);
