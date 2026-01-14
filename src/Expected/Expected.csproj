@@ -4,36 +4,37 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <PackageId>Expected</PackageId>
+    <Version>0.1.11</Version>
+    <Authors>jipg</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/jipgg/Expected</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+      <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+
+<!-- <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles> -->
+<!-- <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath> -->
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
-<PropertyGroup>
-  <PackageId>Expected</PackageId>
-  <Version>0.1.9</Version>
-  <Authors>jipg</Authors>
-  <PackageLicenseExpression>MIT</PackageLicenseExpression>
-  <RepositoryUrl>https://github.com/jipgg/Expected</RepositoryUrl>
-  <RepositoryType>git</RepositoryType>
-  <NoWarn>IDE*</NoWarn>
+  <ItemGroup>
+    <ProjectReference Include="..\Expected.Analyzers\Expected.Analyzers.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
 
-  <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-  <IsPackable>true</IsPackable>
-</PropertyGroup>
-
+    <ProjectReference Include="..\Expected.Generators\Expected.Generators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
 <ItemGroup>
-  <ProjectReference Include="..\Expected.Analyzers\Expected.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-<Content Include="..\Expected.Analyzers\bin\$(Configuration)\netstandard2.0\Expected.Analyzers.dll">
-    <Pack>true</Pack>
-    <PackagePath>analyzers/dotnet/cs/Expected.Analyzers.dll</PackagePath>
-  </Content>
+  <Content Include="..\Expected.Analyzers\bin\$(Configuration)\netstandard2.0\Expected.Analyzers.dll"
+           Pack="true"
+           PackagePath="analyzers/dotnet/cs/" />
 
-  <Content Include="..\Expected.Analyzers\AnalyzerReleases.Shipped.md">
-    <Pack>true</Pack>
-    <PackagePath>analyzers/dotnet/cs/Expected.Analyzers.Shipped.md</PackagePath>
-  </Content>
-  <Content Include="..\Expected.Analyzers\AnalyzerReleases.Unshipped.md">
-    <Pack>true</Pack>
-    <PackagePath>analyzers/dotnet/cs/Expected.Analyzers.Unshipped.md</PackagePath>
-  </Content>
+  <Content Include="..\Expected.Generators\bin\$(Configuration)\netstandard2.0\Expected.Generators.dll"
+           Pack="true"
+           PackagePath="analyzers/dotnet/cs/" />
 </ItemGroup>
 
 </Project>
