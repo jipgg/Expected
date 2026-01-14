@@ -1,2 +1,3 @@
 # Expected
-C# implementation of `std::expected` and `std::optional` in C++.
+C# implementation of `std::expected` in C++ with some creative liberties
+
