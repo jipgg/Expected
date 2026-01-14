@@ -33,7 +33,7 @@ public sealed class Expected<TValue, TError> {
       HasValue = false;
       _error = u.Error;
    }
-   public Expected<TResult, TError> Select<TResult>(Func<TValue, TResult> selector) where TResult : notnull
+   public Expected<TResult, TError> Select<TResult>(Func<TValue, TResult> selector)
        => HasValue ? new(selector(_value)) : new(Unexpected(_error));
 
    public Expected<TValue, TResult> SelectError<TResult>(Func<TError, TResult> selector)
@@ -78,15 +78,4 @@ public sealed class Expected<TValue, TError> {
 
    public static TValue operator +(Expected<TValue, TError> e) => e.Value;
    public static TError operator -(Expected<TValue, TError> e) => e.Error;
-}
-
-public static class ExpectedAsyncExtensions {
-   public static async Task<Expected<TValue, TError>> AndThen<TValue, TError>(this Task<Expected<TValue, TError>> s, Func<TValue, Task<Expected<TValue, TError>>> f) {
-      var r = await s;
-      return await r.AndThen(async v => await f(v));
-   }
-   public static async Task<Expected<TValue, TError>> OrElse<TValue, TError>(this Task<Expected<TValue, TError>> s, Func<TError, Task<Expected<TValue, TError>>> f) {
-      var r = await s;
-      return await r.OrElse(async e => await f(e));
-   }
 }

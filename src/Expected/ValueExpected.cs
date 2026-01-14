@@ -35,18 +35,18 @@ public struct ValueExpected<TValue, TError> {
       _value = default!;
       _error = u.Error;
    }
-   public readonly ValueExpected<TResult, TError> Select<TResult>(Func<TValue, TResult> selector) where TResult : notnull
+   public readonly ValueExpected<TResult, TError> Select<TResult>(Func<TValue, TResult> selector)
        => HasValue ? new(selector(_value)) : new(Unexpected(in _error));
 
-   public readonly ValueExpected<TValue, TResult> SelectError<TResult>(Func<TError, TResult> selector) where TResult : notnull
+   public readonly ValueExpected<TValue, TResult> SelectError<TResult>(Func<TError, TResult> selector)
        => HasValue ? new(_value) : new(Unexpected(selector(_error)));
    public readonly ValueExpected<TValue, TError> AndThen(Func<TValue, ValueExpected<TValue, TError>> selector)
        => HasValue ? selector(_value) : this;
-   public readonly ValueExpected<TResult, TError> AndThen<TResult>(Func<TValue, ValueExpected<TResult, TError>> selector) where TResult : notnull
+   public readonly ValueExpected<TResult, TError> AndThen<TResult>(Func<TValue, ValueExpected<TResult, TError>> selector)
        => HasValue ? selector(_value) : new(Unexpected(in _error));
    public readonly ValueExpected<TValue, TError> OrElse(Func<TError, ValueExpected<TValue, TError>> selector)
        => HasValue ? this : selector(_error);
-   public readonly ValueExpected<TValue, TResult> OrElse<TResult>(Func<TError, ValueExpected<TValue, TResult>> selector) where TResult : notnull
+   public readonly ValueExpected<TValue, TResult> OrElse<TResult>(Func<TError, ValueExpected<TValue, TResult>> selector)
        => HasValue ? new(_value) : selector(_error);
 
    public readonly ValueTask<ValueExpected<TValue, TError>> AndThen(Func<TValue, Task<ValueExpected<TValue, TError>>> selector)
