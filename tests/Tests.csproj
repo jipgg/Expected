@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Expected.csproj" />
+    <ProjectReference Include="..\src\Expected\Expected.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+<PropertyGroup>
+  <PackageId>Expected</PackageId>
+  <Version>0.1.8</Version>
+  <Authors>jipg</Authors>
+  <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  <RepositoryUrl>https://github.com/jipgg/Expected</RepositoryUrl>
+  <RepositoryType>git</RepositoryType>
+  <NoWarn>IDE*</NoWarn>
+
+  <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  <IsPackable>true</IsPackable>
+</PropertyGroup>
+
+<ItemGroup>
+  <ProjectReference Include="..\Expected.Analyzers\Expected.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+<Content Include="..\Expected.Analyzers\bin\$(Configuration)\netstandard2.0\Expected.Analyzers.dll">
+    <Pack>true</Pack>
+    <PackagePath>analyzers/dotnet/cs/Expected.Analyzers.dll</PackagePath>
+  </Content>
+
+  <Content Include="..\Expected.Analyzers\AnalyzerReleases.Shipped.md">
+    <Pack>true</Pack>
+    <PackagePath>analyzers/dotnet/cs/Expected.Analyzers.Shipped.md</PackagePath>
+  </Content>
+  <Content Include="..\Expected.Analyzers\AnalyzerReleases.Unshipped.md">
+    <Pack>true</Pack>
+    <PackagePath>analyzers/dotnet/cs/Expected.Analyzers.Unshipped.md</PackagePath>
+  </Content>
+</ItemGroup>
+
+</Project>
