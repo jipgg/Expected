@@ -1,5 +1,11 @@
 namespace Expected;
 
+[AttributeUsage(AttributeTargets.Enum, Inherited = false, AllowMultiple = false)]
+public sealed class ErrorCodeEnumAttribute : Attribute {
+   public string? Name { get; init; }
+   public bool DontGenerateGetMessage { get; init; }
+}
+
 public abstract class ErrorCategory {
    public abstract string Name { get; }
    public abstract string GetMessage(int errorCode);

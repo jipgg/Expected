@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
 
     <PackageId>Expected</PackageId>
-    <Version>0.1.11</Version>
+    <Version>0.1.14</Version>
     <Authors>jipg</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/jipgg/Expected</RepositoryUrl>
@@ -14,7 +14,7 @@
       <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
 
 <!-- <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles> -->
-<!-- <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath> -->
+<!-- <CompilerGeneratedFilesOutputPath>../generated</CompilerGeneratedFilesOutputPath> -->
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 

@@ -40,6 +40,10 @@ public sealed class ErrorCodeEnumGenerator : IIncrementalGenerator {
       context.RegisterSourceOutput(errorEnums, Generate);
    }
 
+   const string Namespace = "global::Expected";
+   const string ErrorCode = $"{Namespace}.ErrorCode";
+   const string Unreachable = $"{Namespace}.Unreachable";
+   const string ErrorCategory = $"{Namespace}.ErrorCategory";
    static void Generate(SourceProductionContext context, INamedTypeSymbol? symbol) {
       if (symbol is null) return;
       var @namespace = symbol.ContainingNamespace.IsGlobalNamespace
@@ -65,7 +69,6 @@ public sealed class ErrorCodeEnumGenerator : IIncrementalGenerator {
          .Where(static e => e.ConstantValue != null)
          .Select(static e => e.Name)
          .ToArray();
-      const string sourceNamespace = "global::Expected";
 
       string getMessageImpl() {
          return dontGenerateGetMessage ? "" : $$"""
@@ -75,29 +78,44 @@ public sealed class ErrorCodeEnumGenerator : IIncrementalGenerator {
                   {{string.Join("\n         ", enumItems.Select(name => $"{@enum}.{name} => \"{name}\","))}}
                };
          #pragma warning restore CS8524
-               throw new {{sourceNamespace}}.Unreachable();
+               throw new {{Unreachable}}();
             }
          """;
+      }
+      string createErrorCodeEntries() {
+         var b = new StringBuilder();
+         foreach (var item in enumItems) {
+            b.AppendLine($"      public static {ErrorCode} {item} => new((int){@enum}.{item}, {category}.Value);");
+         }
+         if (b.Length > 0) --b.Length;
+         return b.ToString();
       }
 
       var source = $$"""
       namespace {{@namespace}};
-      public sealed partial class {{category}}: {{sourceNamespace}}.ErrorCategory {
+      public sealed partial class {{category}}: {{ErrorCategory}} {
          public override string Name => "{{categoryName}}";
          {{getMessageImpl()}}
-         internal {{category}}() { }
+         static readonly {{category}} _value = new();
+         public static {{category}} Value => _value;
       }
-      public static class {{@enum}}_ErrorCodeEnumExtensions {
-         static readonly {{category}} _category = new();
-         public static {{sourceNamespace}}.ErrorCode AsErrorCode(this {{@enum}} ec) => new((int)ec, _category);
       #if NET10_0_OR_GREATER
-         extension({{@enum}} error) {
-            public static bool operator ==(in ErrorCode a, {{@enum}} v) => a.Equals(v.AsErrorCode());
-            public static bool operator !=(in ErrorCode a, {{@enum}} v) => !a.Equals(v.AsErrorCode());
+      public static class ErrorCodeEnumExtensionsFor{{@enum}} {
+         extension ({{ErrorCategory}}) {
+            public static {{category}} {{@enum}} => {{category}}.Value;
          }
-      #endif //NET10_0_OR_GREATER
+         extension ({{ErrorCode}} errorCode) {
+      {{createErrorCodeEntries()}}
+         }
+         extension({{@enum}} ec) {
+            public {{ErrorCode}} ErrorCode => new((int)ec, {{category}}.Value);
+            public static {{category}} ErrorCategory => {{category}}.Value;
+            public static bool operator ==({{ErrorCode}} a, {{@enum}} v) => a.Equals(v.ErrorCode);
+            public static bool operator !=({{ErrorCode}} a, {{@enum}} v) => !a.Equals(v.ErrorCode);
+         }
       }
+      #endif //NET10_0_OR_GREATER
       """;
-      context.AddSource($"{@enum}_ErrorCodeEnum.g.cs", SourceText.From(source, Encoding.UTF8));
+      context.AddSource($"ErrorCodeEnumExtensionsFor{@enum}.g.cs", SourceText.From(source, Encoding.UTF8));
    }
 }
