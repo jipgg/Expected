@@ -36,14 +36,14 @@ public struct ValueExpected<TValue, TError> {
       _error = u.Error;
    }
    public readonly ValueExpected<TResult, TError> Select<TResult>(Func<TValue, TResult> selector)
-       => HasValue ? new(selector(_value)) : new(Unexpected(in _error));
+       => HasValue ? new(selector(_value)) : new(new Unexpected<TError>(in _error));
 
    public readonly ValueExpected<TValue, TResult> SelectError<TResult>(Func<TError, TResult> selector)
-       => HasValue ? new(_value) : new(Unexpected(selector(_error)));
+       => HasValue ? new(_value) : new(new Unexpected<TResult>(selector(_error)));
    public readonly ValueExpected<TValue, TError> AndThen(Func<TValue, ValueExpected<TValue, TError>> selector)
        => HasValue ? selector(_value) : this;
    public readonly ValueExpected<TResult, TError> AndThen<TResult>(Func<TValue, ValueExpected<TResult, TError>> selector)
-       => HasValue ? selector(_value) : new(Unexpected(in _error));
+       => HasValue ? selector(_value) : new(new Unexpected<TError>(in _error));
    public readonly ValueExpected<TValue, TError> OrElse(Func<TError, ValueExpected<TValue, TError>> selector)
        => HasValue ? this : selector(_error);
    public readonly ValueExpected<TValue, TResult> OrElse<TResult>(Func<TError, ValueExpected<TValue, TResult>> selector)
@@ -78,8 +78,6 @@ public struct ValueExpected<TValue, TError> {
    public static TValue operator +(in ValueExpected<TValue, TError> r) => r.Value;
    public static TError operator -(in ValueExpected<TValue, TError> r) => r.Error;
 
-   public static implicit operator Expected<TValue, TError>(in ValueExpected<TValue, TError> e)
-       => e.HasValue ? e._value : Unexpected(in e._error);
-   public readonly Expected<TValue, TError> AsExpected() => (Expected<TValue, TError>)this;
+   public readonly Expected<TValue, TError> AsExpected() => HasValue ? new(_value) : new(new Unexpected<TError>(_error));
 }
 

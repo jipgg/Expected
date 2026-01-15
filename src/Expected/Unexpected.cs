@@ -14,4 +14,3 @@ public readonly ref struct Unexpected<TError> where TError : allows ref struct {
    [MethodImpl(AggressiveInlining)]
    public Unexpected(TError error) => Error = error;
 }
-

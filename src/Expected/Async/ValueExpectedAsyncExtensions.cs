@@ -148,4 +148,46 @@ public static class ValueExpectedAsyncExtensions {
       var r = await task;
       return r.OrElse<TResult>(f);
    }
+   public static async Task<ValueExpected<TResult, TError>> SelectAsync<TValue, TError, TResult>(
+      this ValueExpected<TValue, TError> e,
+      Func<TValue, Task<TResult>> f
+   ) {
+      if (e.HasValue) return await f(e._value);
+      return new Unexpected<TError>(e._error);
+   }
+   public static async Task<ValueExpected<TValue, TResult>> SelectErrorAsync<TValue, TError, TResult>(
+      this ValueExpected<TValue, TError> e,
+      Func<TError, Task<TResult>> f
+   ) {
+      if (!e.HasValue) return new Unexpected<TResult>(await f(e._error));
+      return e._value;
+   }
+   public static ValueTask<ValueExpected<TValue, TError>> AndThenAsync<TValue, TError>(
+      this ValueExpected<TValue, TError> e,
+      Func<TValue, Task<ValueExpected<TValue, TError>>> f
+   ) {
+      if (e.HasValue) return new(f(e._value));
+      else return new(new Unexpected<TError>(e._error));
+   }
+   public static ValueTask<ValueExpected<TResult, TError>> AndThenAsync<TValue, TError, TResult>(
+      this ValueExpected<TValue, TError> e,
+      Func<TValue, Task<ValueExpected<TResult, TError>>> f
+   ) {
+      if (e.HasValue) return new(f(e._value));
+      else return new(new Unexpected<TError>(e._error));
+   }
+   public static ValueTask<ValueExpected<TValue, TError>> OrElseAsync<TValue, TError>(
+      this ValueExpected<TValue, TError> e,
+      Func<TError, Task<ValueExpected<TValue, TError>>> f
+   ) {
+      if (!e.HasValue) return new(f(e._error));
+      else return new(e._value);
+   }
+   public static ValueTask<ValueExpected<TValue, TResult>> OrElseAsync<TValue, TError, TResult>(
+      this ValueExpected<TValue, TError> e,
+      Func<TError, Task<ValueExpected<TValue, TResult>>> f
+   ) {
+      if (!e.HasValue) return new(f(e._error));
+      else return new(e._value);
+   }
 }

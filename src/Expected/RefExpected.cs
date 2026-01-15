@@ -38,17 +38,17 @@ where TError : allows ref struct {
       _error = u.Error;
    }
    public readonly RefExpected<TResult, TError> Select<TResult>(Func<TValue, TResult> f) where TResult : allows ref struct {
-      return HasValue ? new(f(_value)) : new(Unexpected(_error));
+      return HasValue ? new(f(_value)) : new(new Unexpected<TError>(_error));
    }
 
    public readonly RefExpected<TValue, TResult> SelectError<TResult>(Func<TError, TResult> f) where TResult : allows ref struct
-       => HasValue ? new(_value) : new(Unexpected(f(_error)));
+       => HasValue ? new(_value) : new(new Unexpected<TResult>(f(_error)));
 
    public readonly RefExpected<TValue, TError> AndThen(Func<TValue, RefExpected<TValue, TError>> f)
        => HasValue ? f(_value) : this;
 
    public readonly RefExpected<TResult, TError> AndThen<TResult>(Func<TValue, RefExpected<TResult, TError>> f)
-       => HasValue ? f(_value) : new(Unexpected(_error));
+       => HasValue ? f(_value) : new(new Unexpected<TError>(_error));
 
    public readonly RefExpected<TValue, TError> OrElse(Func<TError, RefExpected<TValue, TError>> f)
        => HasValue ? this : f(_error);

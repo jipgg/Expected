@@ -34,16 +34,18 @@ public sealed class Expected<TValue, TError> {
       _error = u.Error;
    }
    public Expected<TResult, TError> Select<TResult>(Func<TValue, TResult> selector)
-       => HasValue ? new(selector(_value)) : new(Unexpected(_error));
+       => HasValue ? new(selector(_value)) : new(new Unexpected<TError>(_error));
+
 
    public Expected<TValue, TResult> SelectError<TResult>(Func<TError, TResult> selector)
-        => HasValue ? new(_value) : new(Unexpected(selector(_error)));
+        => HasValue ? new(_value) : new(new Unexpected<TResult>(selector(_error)));
+
 
    public Expected<TValue, TError> AndThen(Func<TValue, Expected<TValue, TError>> selector)
        => HasValue ? selector(_value) : this;
 
    public Expected<TResult, TError> AndThen<TResult>(Func<TValue, Expected<TResult, TError>> selector)
-       => HasValue ? selector(_value) : new(Unexpected(_error));
+       => HasValue ? selector(_value) : new(new Unexpected<TError>(_error));
 
    public Expected<TValue, TError> OrElse(Func<TError, Expected<TValue, TError>> selector)
        => HasValue ? this : selector(_error);
