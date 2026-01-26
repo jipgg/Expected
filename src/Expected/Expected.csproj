@@ -6,7 +6,7 @@
      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
      <PackageId>Expected</PackageId>
-     <Version>0.2.0</Version>
+     <Version>0.2.1</Version>
      <Authors>jipg</Authors>
      <PackageLicenseExpression>MIT</PackageLicenseExpression>
      <PackageReadmeFile>README.md</PackageReadmeFile>

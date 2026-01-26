@@ -18,4 +18,3 @@ readonly ref struct RefBar {
    public readonly string Msg;
    public RefBar(string msg) => Msg = msg;
 }
-

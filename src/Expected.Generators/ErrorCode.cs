@@ -6,7 +6,7 @@ enum MessageImplOptions : byte {
    Name = 2,
 }
 record ErrorCodeParams(
-   string Namespace,
+   string? Namespace,
    EnumInfo Enum,
    string Category,
    string? Codes,
@@ -29,8 +29,9 @@ public sealed class ErrorCode : IIncrementalGenerator {
             var codes = attr.Parse<bool>("GenerateCodesClass") is true
                ? (attr.Parse<string>("CodesClassName") ?? $"{name}Codes")
                : null;
+            var ns = symbol.ContainingNamespace;
             return new ErrorCodeParams(
-               Namespace: symbol.ContainingNamespace.ToDisplayString(),
+               Namespace: ns.IsGlobalNamespace ? null : ns.ToDisplayString(),
                Enum: new(
                   Name: name,
                   Fields: [..symbol.GetMembers()

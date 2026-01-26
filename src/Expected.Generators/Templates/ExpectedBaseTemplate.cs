@@ -93,7 +93,8 @@ static class ExpectedTemplate {
          using System.Runtime.CompilerServices;
          using System.Diagnostics.CodeAnalysis;
          using Expected;
-         namespace {{info.Namespace}};
+         {{(info.Namespace is null ? "" : $"namespace {info.Namespace};")}}
+
          [CouldBeUnexpected]
          partial {{info.TypeMod}} {{info.GenericName}} {
          {{makeField(t.TValue, "_value")}}

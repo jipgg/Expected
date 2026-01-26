@@ -48,7 +48,7 @@ record TypeParam(
 }
 
 record ClassInfo(
-   string Namespace,
+   string? Namespace,
    TypeParam[] TypeParams,
    string Name,
    bool IsStruct,
@@ -74,8 +74,10 @@ record ClassInfo(
          isReadOnly = structSyntax.Modifiers.Any(SyntaxKind.ReadOnlyKeyword);
          isRef = structSyntax.Modifiers.Any(SyntaxKind.RefKeyword);
       }
+      var @namespace = symbol.ContainingNamespace.ToDisplayString();
+      if (@namespace == "<global namespace>") @namespace = null;
       return new(
-         symbol.ContainingNamespace.ToDisplayString(),
+         symbol.ContainingNamespace.IsGlobalNamespace ? null : symbol.ContainingNamespace.ToDisplayString(),
          [.. symbol.TypeParameters.Select(static e => TypeParam.From(e))],
          symbol.Name,
          isStruct,

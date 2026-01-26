@@ -36,7 +36,7 @@ class ErrorCodeTemplate {
       using Expected;
       using System.Runtime.CompilerServices;
       using System.ComponentModel;
-      namespace {{@namespace}};
+      {{(@namespace is null ? "" : $"namespace {@namespace};")}}
 
       public sealed{{@partial}} class {{category}}: ErrorCategory {
          public override string Title => "{{title}}";
