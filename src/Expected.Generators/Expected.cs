@@ -21,7 +21,10 @@ public sealed class Expected : IIncrementalGenerator {
                   tValue = typeArgs.TypeArguments[0].ToDisplayString();
                   tError = typeArgs.TypeArguments[1].ToDisplayString();
                }
-               var resolvedTValue = tValue ?? (symbol.Arity >= 1 ? symbol.TypeParameters[0].Name : null);
+               var resolvedTValue = tValue
+                  ?? (symbol.Arity >= 1
+                     ? symbol.TypeParameters[0].Name
+                     : null);
                if (resolvedTValue is null) return null;
                var resolvedTError = tError
                   ?? (symbol.Arity >= 2

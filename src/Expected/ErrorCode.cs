@@ -1,5 +1,7 @@
 namespace Expected;
 
+public sealed class Unreachable(string message = "This code should be unreachable."): InvalidOperationException(message);
+
 public enum MessageImplOptions : byte {
    Partial = 0,
    FullName = 1,

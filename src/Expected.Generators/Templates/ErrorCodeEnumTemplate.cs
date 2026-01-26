@@ -18,7 +18,7 @@ class ErrorCodeTemplate {
          var tabs = new String(data);
          return $$"""
          {{tabs}}{{string.Join($"\n   {tabs}", fields.Select(
-               e => $$"""public static ErrorCode {{e}} { {{inline}} get => new((int){{type}}.{{e}}, {{category}}.Instance); }"""))}}
+               e => $$"""public static ErrorCode {{e}} => new((int){{type}}.{{e}}, {{category}}.Instance);"""))}}
          """;
       }
       string value(string v) => $"{type}.{v}";

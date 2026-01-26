@@ -1,5 +1,7 @@
 namespace Expected;
 
+public sealed class BadExpectedAccess : InvalidOperationException;
+
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false)]
 public sealed class ExpectedAttribute : Attribute {
    public string? TValue { get; set; }
