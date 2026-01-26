@@ -29,7 +29,7 @@ error-by-value alternative to exceptions where they deem fit.
 - Source generators for common boilerplate code
 
 ## Install
-[nuget link](www.nuget.org/packages/Expected/)
+[nuget link](https://www.nuget.org/packages/Expected/)
 ```sh
 dotnet package add Expected
 ```
@@ -168,3 +168,4 @@ var v = errorCode.Category switch {
 > ErrorCodes are not meant to replace Exceptions or other class based error objects.
 > They serve as a means to modularize a multitude of static error values (like enums)
 > and provide a lightweight polymorphic interface for them.
+
