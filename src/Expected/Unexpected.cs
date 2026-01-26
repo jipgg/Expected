@@ -1,5 +1,8 @@
 namespace Expected;
 
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false)]
+public sealed class CouldBeUnexpectedAttribute : Attribute;
+
 public static class UnexpectedFunction {
    [MethodImpl(AggressiveInlining)]
    public static Unexpected<TError> Unexpected<TError>(scoped in TError error) where TError : allows ref struct => new(in error);
@@ -7,6 +10,7 @@ public static class UnexpectedFunction {
    public static Unexpected<TError> Unexpected<TError>(TError error) where TError : allows ref struct => new(error);
 }
 
+[CouldBeUnexpected]
 public readonly ref struct Unexpected<TError> where TError : allows ref struct {
    public TError Error { get; }
    [MethodImpl(AggressiveInlining)]

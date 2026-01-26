@@ -3,9 +3,6 @@ namespace Tests;
 
 using Expected = Expected<ObjFoo, ObjBar>;
 public class Expected_Tests {
-	Expected dostome() {
-		return new ObjFoo(1);
-	}
    [Fact]
    public void HasValue_when_constructed_with_value() {
       var e = new Expected(new(42));
@@ -89,5 +86,3 @@ public class Expected_BindTests {
       Assert.Equal(1, e.Value.X);
    }
 }
-
-//@RefExpected

@@ -67,7 +67,6 @@ public class ValueExpected_BindTests {
    public void AndThen_left_identity() {
       var e = new ValueExpected(new Foo(5))
           .AndThen(Increment);
-
       Assert.Equal(6, e.Value.X);
    }
 

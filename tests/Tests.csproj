@@ -1,11 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>false</IsPackable>
+     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,6 +23,15 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\Expected\Expected.csproj" />
+     <ProjectReference
+        Include="..\src\Expected.Analyzers\Expected.Analyzers.csproj" 
+        OutputItemType="Analyzer"
+        ReferenceOutputAssembly="false"
+      />
+     <ProjectReference
+        Include="..\src\Expected.Generators\Expected.Generators.csproj"
+        OutputItemType="Analyzer"
+        ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

@@ -1,7 +1,3 @@
-using System.Collections.Immutable;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Operations;
 namespace Expected.Analyzers;
 
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
@@ -28,13 +24,9 @@ public sealed class CouldBeUnexpectedAnalyzer : DiagnosticAnalyzer {
       context.RegisterOperationAction(AnalyzeAwait, OperationKind.Await);
    }
 
-   static bool IsExpectedType(ITypeSymbol? type) {
-      if (type is not INamedTypeSymbol named) return false;
-
-      var fullName = named.ContainingNamespace + "." + named.Name;
-      ReadOnlySpan<string> expectedTypeNames = ["Expected.Expected", "Expected.ValueExpected", "Expected.RefExpected"];
-      return expectedTypeNames.IndexOf(fullName) is not -1;
-   }
+   static bool IsExpectedType(ITypeSymbol? type) 
+      => type?.GetAttributes()
+         .SingleOrDefault(static e => e.AttributeClass?.ToDisplayString() is "Expected.CouldBeUnexpectedAttribute") is not null;
 
    static bool IsIgnored(IOperation op) {
       if (op.Parent is IExpressionStatementOperation) return true;
@@ -54,7 +46,6 @@ public sealed class CouldBeUnexpectedAnalyzer : DiagnosticAnalyzer {
          context.ReportDiagnostic(diagnostic);
       }
    }
-
    static void AnalyzeAwait(OperationAnalysisContext context) {
       if (context.Operation is not IAwaitOperation awaitOp) return;
 
