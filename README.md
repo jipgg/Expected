@@ -6,6 +6,7 @@ that you have probably seen floating around in the C# ecosystem.
 The main idea is, with the use of implicit conversions that elegantly translates from C++ to C#,
 this result type tries to keep the 'happy path' as non-intrusive as possible, similarly to exceptions,
 while keeping the error path branches explicit and non-ambiguous.
+
 A quick, trivial parallel to exceptions:
 ```cs
 // by value 
@@ -68,6 +69,7 @@ The library ships with 3 variations of expected types:
 - `Expected`: general-purpose class variant
 - `ValueExpected`: struct variant
 - `RefExpected`: ref struct variant
+
 but you can also generate a new expected type
 with your own custom constraints or logic like in the following examples:
 ```cs
@@ -94,7 +96,7 @@ The generated types will be implicitly convertible to and from their correspondi
 - `class`es to `Expected<TValue, TError>`
 ### ErrorCode
 The idea of this type is quite simple,
-store both an `int` as the error codevalue and a reference to a polymorphic `ErrorCategory` singleton
+store both an `int` as the error code value and a reference to a polymorphic `ErrorCategory` singleton
 to allow for a lightweight error object with some additional information and semantics.
 The library ships with a source generator for generating the typical boilerplate that comes with this
 type of error handling, but ErrorCategories can be created manually if neccessary:
