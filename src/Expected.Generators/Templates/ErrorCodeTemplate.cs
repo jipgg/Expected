@@ -5,7 +5,6 @@ class ErrorCodeTemplate {
       var (@namespace, @enum, category, codes, title, messageImpl) = args;
       var (type, fields) = @enum;
 
-      var inline = "[MethodImpl(MethodImplOptions.AggressiveInlining)]";
       string expandSwitch(string method, Func<string, string> selector) => $$"""
          public override string {{method}}(int value) => ({{type}})value switch {
             {{string.Join($"\n      ", fields.Select(selector))}}

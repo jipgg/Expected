@@ -28,6 +28,7 @@ error-by-value alternative to exceptions where they deem fit.
 - Source generators for common boilerplate code
 
 ## Install
+[nuget link](www.nuget.org/packages/Expected/)
 ```sh
 dotnet package add Expected
 ```
