@@ -5,10 +5,12 @@ class ErrorCodeTemplate {
       var (@namespace, @enum, category, codes, title, messageImpl) = args;
       var (type, fields) = @enum;
 
+      const string errorCode = "global::Expected.ErrorCode";
+
       string expandSwitch(string method, Func<string, string> selector) => $$"""
          public override string {{method}}(int value) => ({{type}})value switch {
             {{string.Join($"\n      ", fields.Select(selector))}}
-            _ => throw new Unreachable(),
+            _ => throw new global::Expected.Unreachable(),
          };
       """;
       string expandStatic(int indent = 2) {
@@ -17,7 +19,7 @@ class ErrorCodeTemplate {
          var tabs = new String(data);
          return $$"""
          {{tabs}}{{string.Join($"\n   {tabs}", fields.Select(
-               e => $$"""public static ErrorCode {{e}} => new((int){{type}}.{{e}}, {{category}}.Instance);"""))}}
+               e => $$"""public static {{errorCode}} {{e}} => new((int){{type}}.{{e}}, {{category}}.Instance);"""))}}
          """;
       }
       string value(string v) => $"{type}.{v}";
@@ -26,22 +28,18 @@ class ErrorCodeTemplate {
          MessageImplOptions.Name => expandSwitch("GetMessage",
             name => $"""{value(name)} => "{name}","""),
          MessageImplOptions.FullName => expandSwitch("GetMessage",
-            name => $"""{value(name)} => "{@namespace}.{value(name)}","""),
+            name => $"""{value(name)} => "{(@namespace is null ? "" : $"{@namespace}.")}{value(name)}","""),
          MessageImplOptions.Partial or _ => "",
       };
       var @partial = messageImpl is MessageImplOptions.Partial ? " partial" : "";
 
+      const string errorCategory = "global::Expected.ErrorCategory";
       return $$"""""
-      #nullable enable
-      using Expected;
-      using System.Runtime.CompilerServices;
-      using System.ComponentModel;
       {{(@namespace is null ? "" : $"namespace {@namespace};")}}
-
-      public sealed{{@partial}} class {{category}}: ErrorCategory {
+      public sealed{{@partial}} class {{category}}: {{errorCategory}} {
          public override string Title => "{{title}}";
       {{getMessageImpl}}
-         static {{category}}? _instance = null;
+         static {{category}} _instance = null!;
          public static {{category}} Instance {
             get {
                if (_instance is null) _instance = new();
@@ -55,17 +53,17 @@ class ErrorCodeTemplate {
       }
       """ : "")}}
       public static class ErrorCode{{type}}Extensions {
-         public static ErrorCode AsCode(this {{type}} e) => new((int)e, {{category}}.Instance);
+         public static {{errorCode}} AsCode(this {{type}} e) => new((int)e, {{category}}.Instance);
       #if NET10_0_OR_GREATER
-         extension (ErrorCategory) {
+         extension ({{errorCategory}}) {
             public static {{category}} {{type}} => {{category}}.Instance;
          }
-         extension (ErrorCode) {
+         extension ({{errorCode}}) {
       {{expandStatic(3)}}
          }
          extension({{type}}) {
-            public static bool operator ==(ErrorCode a, {{type}} v) => a.Equals(v.AsCode());
-            public static bool operator !=(ErrorCode a, {{type}} v) => !a.Equals(v.AsCode());
+            public static bool operator ==({{errorCode}} a, {{type}} v) => a.Equals(v.AsCode());
+            public static bool operator !=({{errorCode}} a, {{type}} v) => !a.Equals(v.AsCode());
          }
       #endif //NET10_0_OR_GREATER
       }

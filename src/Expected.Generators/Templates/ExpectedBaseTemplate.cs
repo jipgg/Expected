@@ -1,7 +1,6 @@
 namespace Expected.Generators.Templates;
 
 static class ExpectedTemplate {
-   const string AggressiveInlining = "MethodImpl(MethodImplOptions.AggressiveInlining)";
    public static string Apply(ExpectedParams t) {
       var info = t.ClassInfo;
 
@@ -23,48 +22,57 @@ static class ExpectedTemplate {
                """;
          }
       }
+      const string expectedNs = "global::Expected";
+      const string throwBadAccess = $"throw new {expectedNs}.BadExpectedAccess()";
+      static string unexpected(string tError) => $"{expectedNs}.Unexpected<{tError}>";
+      const string hasValue = "_hasValue";
+      const string value = "_value";
+      const string error = "_error";
       const string R = "TResult";
       string makeMethods(string name, bool @implicit = true, bool @async = true, string vWhere = "", string eWhere = "") {
          var V = t.TValue;
          var E = t.TError;
-         string generic(string? v = null, string? e = null) => $"{name}<{v ?? V}, {e ?? E}>";
-         string unexpected(string? e = null) => $"new Unexpected<{e ?? E}>";
+         static string func(string first, params string[] rest) => $"global::System.Func<{first}, {string.Join(", ", rest)}>";
+         string expected(string v, string e) => $"{name}<{v}, {e}>";
          var source = $$"""
-               public {{generic(R, E)}} Select<{{R}}>(Func<{{V}}, {{R}}> selector) {{vWhere}}
-                  => HasValue ? new(selector(_value)) : new({{unexpected()}}(_error));
-               public {{generic(V, R)}} SelectError<{{R}}>(Func<{{E}}, {{R}}> selector) {{eWhere}}
-                  => HasValue ? new(_value) : new({{unexpected(R)}}(selector(_error)));
-               public {{generic()}} AndThen(Func<{{V}}, {{generic()}}> selector)
-                  => HasValue ? selector(_value) : this;
-               public {{generic(R, E)}} AndThen<{{R}}>(Func<{{V}}, {{generic(R, E)}}> selector) {{vWhere}}
-                  => HasValue ? selector(_value) : new({{unexpected()}}(_error));
-               public {{generic()}} OrElse(Func<{{E}}, {{generic()}}> selector)
-                  => HasValue ? this : selector(_error);
-               public {{generic(V, R)}} OrElse<{{R}}>(Func<{{E}}, {{generic(V, R)}}> selector) {{eWhere}}
-                  => HasValue ? new(_value) : selector(_error);
+               public {{expected(R, E)}} Select<{{R}}>({{func(V, R)}} selector) {{vWhere}}
+                  => {{hasValue}} ? new(selector({{value}})) : new(new {{unexpected(E)}}({{error}}));
+               public {{expected(V, R)}} SelectError<{{R}}>({{func(E, R)}} selector) {{eWhere}}
+                  => {{hasValue}} ? new({{value}}) : new(new {{unexpected(R)}}(selector({{error}})));
+               public {{expected(V, E)}} AndThen({{func(V, expected(V, E))}} selector)
+                  => {{hasValue}} ? selector({{value}}) : this;
+               public {{expected(R, E)}} AndThen<{{R}}>(Func<{{V}}, {{expected(R, E)}}> selector) {{vWhere}}
+                  => {{hasValue}} ? selector(_value) : new(new {{unexpected(E)}}(_error));
+               public {{expected(V, E)}} OrElse(Func<{{E}}, {{expected(V, E)}}> selector)
+                  => {{hasValue}} ? this : selector(_error);
+               public {{expected(V, R)}} OrElse<{{R}}>(Func<{{E}}, {{expected(V, R)}}> selector) {{eWhere}}
+                  => {{hasValue}} ? new(_value) : selector(_error);
 
             """;
          if (@implicit) {
             source += $$"""
-               public static implicit operator {{generic()}}(scoped in {{info.GenericName}} e)
-                  => e._hasValue ? new(e._value) : new({{unexpected()}}(e._error));
-               public static implicit operator {{info.GenericName}}(scoped in {{generic()}} e)
-                  => e.HasValue ? new(e.Value) : new({{unexpected()}}(e.Error));
+               public static implicit operator {{expected(V, E)}}(scoped in {{info.GenericName}} expected)
+                  => expected.{{hasValue}} ? new(expected.{{value}}) : new(new {{unexpected(E)}}(expected.{{error}}));
+               public static implicit operator {{info.GenericName}}(scoped in {{expected(V, E)}} expected)
+                  => expected ? new(+expected) : new(new {{unexpected(E)}}(-expected));
 
             """;
          }
          if (@async) {
+            const string tasksNamespace = "global::System.Threading.Tasks";
+            static string valueTask(string t) => $"{tasksNamespace}.ValueTask<{t}>";
+            static string task(string t) => $"{tasksNamespace}.Task<{t}>";
             source += $$"""
-               public ValueTask<{{generic()}}> AndThen(Func<{{V}}, Task<{{generic()}}>> selector) 
-                  => HasValue ? new(selector(_value)) : new(this);
+               public {{valueTask(expected(V, E))}} AndThen({{func(V, task(expected(V, E)))}} selector) 
+                  => {{hasValue}} ? new(selector({{value}})) : new(this);
 
-               public ValueTask<{{generic(R, E)}}> AndThen<{{R}}>(Func<{{V}}, Task<{{generic(R, E)}}>> selector) {{vWhere}}
-                  => HasValue ? new(selector(_value)) : new({{unexpected()}}(_error));
+               public {{valueTask(expected(R, E))}} AndThen<{{R}}>({{func(V, task(expected(R, E)))}} selector) {{vWhere}}
+                  => {{hasValue}} ? new(selector({{value}})) : new(new {{unexpected(E)}}({{error}}));
 
-               public ValueTask<{{generic()}}> OrElse(Func<{{E}}, Task<{{generic()}}>> selector)
-                  => HasValue ? new(this) : new(selector(_error));
-               public ValueTask<{{generic(V, R)}}> OrElse<{{R}}>(Func<{{E}}, Task<{{generic(V, R)}}>> selector) {{eWhere}}
-                  => HasValue ? new(_value) : new(selector(_error));
+               public {{valueTask(expected(V, E))}} OrElse({{func(E, task(expected(V, E)))}} selector)
+                  => {{hasValue}} ? new(this) : new(selector({{error}}));
+               public {{valueTask(expected(V, R))}} OrElse<{{R}}>({{func(E, task(expected(V, R)))}} selector) {{eWhere}}
+                  => {{hasValue}} ? new({{value}}) : new(selector({{error}}));
 
             """;
 
@@ -75,73 +83,81 @@ static class ExpectedTemplate {
          { IsCanonical: true } => makeMethods(
                info.Name,
                @implicit: false,
-               @async: info.Name is not "RefExpected",
+               @async: !info.StructIsRef,
                info.TypeParams.FirstOrDefault(e => e.Name == t.TValue)?.WhereClause(R) ?? "",
                info.TypeParams.FirstOrDefault(e => e.Name == t.TError)?.WhereClause(R) ?? ""
             ),
          { ClassInfo.IsStruct: true, ClassInfo.StructIsRef: true } => makeMethods(
-               "RefExpected",
+               $"{expectedNs}.RefExpected",
                @implicit: true,
                @async: false,
                $"where {R}: allows ref struct",
                $"where {R}: allows ref struct"
             ),
-         { ClassInfo.IsStruct: true, ClassInfo.StructIsRef: false } => makeMethods("ValueExpected"),
-         _ => makeMethods("Expected"),
+         { ClassInfo.IsStruct: true } => makeMethods($"{expectedNs}.ValueExpected"),
+         _ => makeMethods($"{expectedNs}.Expected"),
       };
+      const string overloadResolution = "global::System.Runtime.CompilerServices.OverloadResolutionPriority(1)";
+      const string aggressiveInlining
+         = "global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)";
       return $$"""
-         using System.Runtime.CompilerServices;
-         using System.Diagnostics.CodeAnalysis;
-         using Expected;
          {{(info.Namespace is null ? "" : $"namespace {info.Namespace};")}}
-
-         [CouldBeUnexpected]
+         [{{expectedNs}}.CouldBeUnexpected]
          partial {{info.TypeMod}} {{info.GenericName}} {
-         {{makeField(t.TValue, "_value")}}
-         {{makeField(t.TError, "_error")}}
-         {{makeField("bool", "_hasValue")}}
+         {{makeField(t.TValue, value)}}
+         {{makeField(t.TError, error)}}
+         {{makeField("bool", hasValue)}}
          {{makeProperty(t.TValue, "Value",
-            get: "_hasValue ? _value : throw new BadExpectedAccess()",
-            set: "_hasValue = true; _value = value"
+            get: $"{hasValue} ? {value} : {throwBadAccess}",
+            set: $"{hasValue} = true; {value} = value"
          )}}
          {{makeProperty(t.TError, "Error",
-            get: "_hasValue ? throw new BadExpectedAccess() : _error",
-            set: "_hasValue = false; _error = value"
+            get: $"{hasValue} ? {throwBadAccess} : {error}",
+            set: $"{hasValue} = false; {error} = value"
          )}}
-            public {{@readonly}} bool HasValue => _hasValue; 
-            public {{@readonly}} {{t.TValue}} ValueOr(scoped in {{t.TValue}} v) => HasValue ? _value : v;
-            public {{@readonly}} {{t.TError}} ErrorOr(scoped in {{t.TError}} e) => HasValue ? e : _error;
+            public {{@readonly}} bool HasValue => {{hasValue}}; 
+            public {{@readonly}} {{t.TValue}} ValueOr(scoped in {{t.TValue}} value) => {{hasValue}} ? {{value}} : value;
+            public {{@readonly}} {{t.TError}} ErrorOr(scoped in {{t.TError}} error) => {{hasValue}} ? error : {{error}};
 
-            [{{AggressiveInlining}}, OverloadResolutionPriority(1)]
+            [{{aggressiveInlining}}]
+            [{{overloadResolution}}]
             public {{info.Name}}(scoped in {{t.TValue}} value) {
-               _hasValue = true;
-               _error = default!;
-               _value = value;
+               {{hasValue}} = true;
+               {{error}} = default!;
+               {{value}} = value;
             }
-            [{{AggressiveInlining}}, OverloadResolutionPriority(1)]
+            [{{aggressiveInlining}}]
+            [{{overloadResolution}}]
             public {{info.Name}}({{t.TValue}} value) {
-               _hasValue = true;
-               _error = default!;
-               _value = value;
+               {{hasValue}} = true;
+               {{error}} = default!;
+               {{value}} = value;
             }
-            [{{AggressiveInlining}}]
-            public {{info.Name}}(scoped in Unexpected<{{t.TError}}> u) {
-               _hasValue = false;
-               _value = default!;
-               _error = u.Error;
+            [{{aggressiveInlining}}]
+            public {{info.Name}}(scoped in {{unexpected(t.TError)}} unexpected) {
+               {{hasValue}} = false;
+               {{value}} = default!;
+               {{error}} = unexpected.Error;
             }
-            [{{AggressiveInlining}}]
-            public static implicit operator {{info.GenericName}}(scoped in {{t.TValue}} v) => new(v);
-            [{{AggressiveInlining}}]
-            public static implicit operator {{info.GenericName}}(scoped in Unexpected<{{t.TError}}> u) => new(u);
-            [{{AggressiveInlining}}]
-            public static bool operator true({{paramMod}}{{info.GenericName}} r) => r.HasValue;
-            [{{AggressiveInlining}}]
-            public static bool operator false({{paramMod}}{{info.GenericName}} r) => !r.HasValue;
-            [{{AggressiveInlining}}]
-            public static bool operator !({{paramMod}}{{info.GenericName}} r) => !r.HasValue;
-            public static {{t.TValue}} operator +({{paramMod}}{{info.GenericName}} r) => r.Value;
-            public static {{t.TError}} operator -({{paramMod}}{{info.GenericName}} r) => r.Error;
+            [{{aggressiveInlining}}]
+            public static implicit operator {{info.GenericName}}(scoped in {{t.TValue}} value)
+               => new(value);
+            [{{aggressiveInlining}}]
+            public static implicit operator {{info.GenericName}}(scoped in {{unexpected(t.TError)}} unexpected)
+               => new(unexpected);
+            [{{aggressiveInlining}}]
+            public static bool operator true({{paramMod}}{{info.GenericName}} expected)
+               => expected.{{hasValue}};
+            [{{aggressiveInlining}}]
+            public static bool operator false({{paramMod}}{{info.GenericName}} expected)
+               => !expected.{{hasValue}};
+            [{{aggressiveInlining}}]
+            public static bool operator !({{paramMod}}{{info.GenericName}} expected)
+               => !expected.{{hasValue}};
+            public static {{t.TValue}} operator +({{paramMod}}{{info.GenericName}} expected)
+               => expected.{{hasValue}} ? expected.{{value}} : {{throwBadAccess}};
+            public static {{t.TError}} operator -({{paramMod}}{{info.GenericName}} expected)
+               => expected.{{hasValue}} ? {{throwBadAccess}} : expected.{{error}};
 
          {{resolveMethods()}}
          }

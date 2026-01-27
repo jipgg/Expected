@@ -34,11 +34,11 @@ public sealed class ErrorCode : IIncrementalGenerator {
                Namespace: ns.IsGlobalNamespace ? null : ns.ToDisplayString(),
                Enum: new(
                   Name: name,
-                  Fields: [..symbol.GetMembers()
+                  Fields: new([..symbol.GetMembers()
                      .OfType<IFieldSymbol>()
                      .Where(e => e.IsConst)
                      .Select(static e => e.Name)
-                  ]),
+                  ])),
                Category: attr.Parse<string>("CategoryClassName") ?? $"{name}Category",
                Codes: codes,
                Title: attr.Parse<string>("Title") ?? name,
@@ -47,10 +47,7 @@ public sealed class ErrorCode : IIncrementalGenerator {
          }
       ).Where(static e => e is not null);
       context.RegisterSourceOutput(provider, static (context, args) => {
-         context.AddSource(
-            $"{args!.Enum.Name}.g.cs",
-            ErrorCodeTemplate.Apply(args)
-         );
+         context.AddSource($"{args!.Enum.Name}.g.cs", ErrorCodeTemplate.Apply(args));
       });
    }
 }

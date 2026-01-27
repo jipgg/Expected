@@ -18,10 +18,9 @@ public sealed partial class Expected<TValue, TError>;
 [Expected, IsCanonical, ExpectedAsyncExtended]
 public partial struct ValueExpected<TValue, TError> {
    public readonly Expected<TValue, TError> AsExpected()
-      => HasValue ? new(_value) : new(new Unexpected<TError>(_error));
+      => _hasValue ? new(_value) : new(new Unexpected<TError>(_error));
 }
 [Expected, IsCanonical]
 public ref partial struct RefExpected<TValue, TError>
    where TValue : allows ref struct
    where TError : allows ref struct;
-

@@ -1,16 +1,17 @@
+using System.Collections.Immutable;
+using System.Collections;
 namespace Expected.Generators.Utility;
 
-record TypeParam(
+sealed record TypeParam(
    string Name,
    string Constraints
 ) {
    public string WhereClause(string typeParam) => string.IsNullOrWhiteSpace(Constraints) ? "" : $"where {typeParam}: {Constraints}";
-   public static TypeParam From(ITypeParameterSymbol symbol) {
+   public static TypeParam Create(ITypeParameterSymbol symbol) {
       var parts = new List<string>();
 
       if (symbol.HasUnmanagedTypeConstraint) {
          parts.Add("unmanaged");
-
       } else if (symbol.HasValueTypeConstraint) {
          parts.Add("struct");
       } else if (symbol.HasReferenceTypeConstraint) {
@@ -22,42 +23,32 @@ record TypeParam(
          parts.Add("notnull");
       }
 
-      var baseType = symbol.ConstraintTypes
+      var @base = symbol.ConstraintTypes
          .FirstOrDefault(t => t.TypeKind == TypeKind.Class);
 
-      if (baseType is not null) {
-         parts.Add(baseType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
-      }
+      var displayFormat = SymbolDisplayFormat.FullyQualifiedFormat
+         .WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers);
+      if (@base is not null) parts.Add(@base.ToDisplayString(displayFormat));
 
       foreach (var @interface in symbol.ConstraintTypes.Where(t => t.TypeKind == TypeKind.Interface)) {
-         parts.Add(@interface.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
+         parts.Add(@interface.ToDisplayString(displayFormat));
       }
 
-      if (symbol.HasConstructorConstraint) {
-         parts.Add("new()");
-      }
-      if (symbol.AllowsRefLikeType) {
-         parts.Add("allows ref struct");
-      }
+      if (symbol.HasConstructorConstraint) parts.Add("new()");
+      if (symbol.AllowsRefLikeType) parts.Add("allows ref struct");
 
-      return new TypeParam(
-         symbol.Name,
-         string.Join(", ", parts)
-      );
+      return new(symbol.Name, string.Join(", ", parts));
    }
 }
 
-record ClassInfo(
+sealed record ClassInfo(
    string? Namespace,
-   TypeParam[] TypeParams,
+   ValueEqualityArray<TypeParam> TypeParams,
    string Name,
    bool IsStruct,
    bool StructIsReadOnly,
    bool StructIsRef
 ) {
-   public string HintName => TypeParams.Length > 0
-      ? $"{Name}{{{string.Join(",", TypeParams.Select(static e => e.Name))}}}" : Name;
-
    public string GenericName => TypeParams.Length > 0
       ? $"{Name}<{string.Join(", ", TypeParams.Select(static e => e.Name))}>" : Name;
 
@@ -74,11 +65,11 @@ record ClassInfo(
          isReadOnly = structSyntax.Modifiers.Any(SyntaxKind.ReadOnlyKeyword);
          isRef = structSyntax.Modifiers.Any(SyntaxKind.RefKeyword);
       }
-      var @namespace = symbol.ContainingNamespace.ToDisplayString();
-      if (@namespace == "<global namespace>") @namespace = null;
+      var @namespace = symbol.ContainingNamespace.IsGlobalNamespace
+         ? null : symbol.ContainingNamespace.ToDisplayString();
       return new(
-         symbol.ContainingNamespace.IsGlobalNamespace ? null : symbol.ContainingNamespace.ToDisplayString(),
-         [.. symbol.TypeParameters.Select(static e => TypeParam.From(e))],
+         @namespace,
+         new([.. symbol.TypeParameters.Select(static e => TypeParam.Create(e))]),
          symbol.Name,
          isStruct,
          isReadOnly,

@@ -8,42 +8,57 @@ record ExpectedParams(
 );
 [Generator]
 public sealed class Expected : IIncrementalGenerator {
+   static string MakeHintName(INamedTypeSymbol symbol, string tValue, string tError) {
+      var ns = symbol.ContainingNamespace;
+      var str = $"{(ns.IsGlobalNamespace ? "" : $"{ns.ToDisplayString()}.")}";
+      str += symbol.Name;
+      str += $"{{{tValue.Replace("global::", "")},";
+      str += $"{tError.Replace("global::", "")}}}";
+
+      return str;
+   }
    public void Initialize(IncrementalGeneratorInitializationContext context) {
+
       context.RegisterSourceOutput(
          context.SyntaxProvider.ForAttributeWithMetadataName(MetadataName,
             static (node, _) => node is ClassDeclarationSyntax or StructDeclarationSyntax and { AttributeLists.Count: > 0 },
-            static (context, _) => {
-               if (context.TargetSymbol is not INamedTypeSymbol symbol) return null;
+            static (string, ExpectedParams?) (context, _) => {
+               if (context.TargetSymbol is not INamedTypeSymbol symbol) return ("", null);
                var attr = AttributeParser.From(symbol, GetAttributeClass(context));
                var tValue = attr.Parse<string>("TValue");
                var tError = attr.Parse<string>("TError");
                if (GetTypeArgumentsInterface(symbol) is { } typeArgs) {
-                  tValue = typeArgs.TypeArguments[0].ToDisplayString();
-                  tError = typeArgs.TypeArguments[1].ToDisplayString();
+                  var fmt = SymbolDisplayFormat.FullyQualifiedFormat
+                     .WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers);
+                  tValue = typeArgs.TypeArguments[0].ToDisplayString(fmt);
+                  tError = typeArgs.TypeArguments[1].ToDisplayString(fmt);
                }
                var resolvedTValue = tValue
                   ?? (symbol.Arity >= 1
                      ? symbol.TypeParameters[0].Name
                      : null);
-               if (resolvedTValue is null) return null;
+               if (resolvedTValue is null) return ("", null);
                var resolvedTError = tError
                   ?? (symbol.Arity >= 2
                      ? symbol.TypeParameters[1].Name
                      : (symbol.Arity >= 1 && tValue != symbol.TypeParameters[0].Name
                         ? symbol.TypeParameters[0].Name
                         : null));
-               if (resolvedTError is null) return null;
-               return new ExpectedParams(
-                  ClassInfo: ClassInfo.Create(context.TargetNode, symbol),
-                  TValue: resolvedTValue,
-                  TError: resolvedTError,
-                  IsCanonical: IsCanonicalType(symbol)
-               );
-            }).Where(static e => e is not null),
-         static (context, args) => {
+               if (resolvedTError is null) return ("", null);
+               return (
+                  MakeHintName(symbol, resolvedTValue, resolvedTError),
+                  new ExpectedParams(
+                     ClassInfo: ClassInfo.Create(context.TargetNode, symbol),
+                     TValue: resolvedTValue ?? "TValue",
+                     TError: resolvedTError ?? "TError",
+                     IsCanonical: IsCanonicalType(symbol)
+               ));
+            }).Where(static e => e.Item2 is not null),
+         static (context, e) => {
+            var (hintName, args) = e;
             context.AddSource(
-               $"{args!.ClassInfo.HintName}.g.cs",
-               ExpectedTemplate.Apply(args)
+               $"{hintName}.g.cs",
+               ExpectedTemplate.Apply(args!)
             );
          });
 
