@@ -59,7 +59,7 @@ static MyResult<string> HandleDeclaratively()
         .AndThen(DoOtherThing)
         .SelectError(static err => err.AsCode());
 
-[Expected(TError = nameof(ErrorCode))]
+[Unexpected<ErrorCode>]
 partial class MyResult<T>;
 [ErrorCode]
 enum MyError { SomeErrorValue, SomeOtherErrorValue }
