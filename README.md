@@ -52,7 +52,7 @@ static MyResult<string> HandleImperatively() {
     if (!did) return Unexpected(did.Error.AsCode());
     var didOther = DoOtherThing(+did);
     if (!didOther) return Unexpected(ErrorCode.SomeOtherErrorValue);
-    r"eturn +didOther;
+    return +didOther;
 }
 static MyResult<string> HandleDeclaratively()
     => DoSometing(false)
@@ -73,27 +73,27 @@ The library ships with 3 variations of expected types:
 but you can also generate a new expected type
 with your own custom constraints or logic like in the following examples:
 ```cs
-using Expected;
+[Unexpected<SomeDomainException>]
+partial struct SomeDomainResult<T>;
 
-[Expected(TValue = "System.Span<char>")]
-ref partial struct MySpanExpected<TError>
-    where TError: allows ref struct;
+[Expected<NoError>]
+partial struct Errorable<E>;
+
+[Expected<ReadOnlySpan<byte>, ErrorCode>]
+readonly ref partial struct MyExpected;
 
 [Expected]
 partial class MyExpected<T, E> where E: Exception;
 
-[Expected]
-readonly partial struct MyReadonlyExpected<T>
-: IExpectedTypeArguments<List<T>, string>;
-// serves as a tag for binding generic type arguments
-// especially useful for non-trivial type specializations (i.e. nested)
+partial struct MarkedExpected<T> : ISourceGeneratedExpectedMarker<List<T>, string>;
+// more verbose option for finetuned control over nesting of type parameters
 
 ```
 How the type gets generated depends on the specified keywords, generic type arguments and generic constraints.
 The generated types will be implicitly convertible to and from their corresponding 'canonical' type:
-- `ref struct`s to `RefExpected<TValue, TError>`
-- `struct`s to `ValueExpected<TValue, TError>`
-- `class`es to `Expected<TValue, TError>`
+- `ref struct` to `RefExpected<TValue, TError>`
+- `struct` to `ValueExpected<TValue, TError>`
+- `class` to `Expected<TValue, TError>`
 ### ErrorCode
 The idea of this type is quite simple,
 store both an `int` as the error code value and a reference to a polymorphic `ErrorCategory` singleton
