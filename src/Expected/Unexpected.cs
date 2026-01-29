@@ -1,7 +1,12 @@
 namespace Expected;
 
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false)]
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface, AllowMultiple = false)]
 public sealed class CouldBeUnexpectedAttribute : Attribute;
+
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false)]
+public sealed class UnexpectedAttribute<TError>: Attribute
+   where TError: allows ref struct;
+
 
 public static class UnexpectedFunction {
    [MethodImpl(AggressiveInlining)]

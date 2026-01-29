@@ -8,7 +8,8 @@ public sealed class ExpectedAsyncExtended : IIncrementalGenerator {
    public void Initialize(IncrementalGeneratorInitializationContext context) {
       context.RegisterSourceOutput(
          context.SyntaxProvider.ForAttributeWithMetadataName(MetadataName,
-            static (node, _) => node is ClassDeclarationSyntax or StructDeclarationSyntax and { AttributeLists.Count: > 0 },
+            static (node, _) => node is TypeDeclarationSyntax { AttributeLists.Count: > 0 }
+               and not InterfaceDeclarationSyntax or EnumDeclarationSyntax,
             static (context, _) => {
                var symbol = context.TargetSymbol;
                var attrClass = context.SemanticModel.Compilation.GetTypeByMetadataName(MetadataName);

@@ -3,22 +3,36 @@ using Expected;
 [ErrorCode(MessageImpl = MessageImplOptions.FullName)]
 public enum GlobalNamespacedError { A, B }
 
-[Expected]
-public partial struct GlobalExpected<V, E>;
+readonly struct NullError;
+
+[Expected<NullError>]
+sealed partial class Errorable<TError>;
+
+[Expected<int, string>]
+partial struct Result;
+
+record DomainSpecificError;
+
+[Unexpected<DomainSpecificError>]
+partial struct DomainSpecificResult<T>;
+
+partial struct MyExpected<T> : ISourceGeneratedExpectedMarker<List<T>, Exception>;
 
 namespace Named {
-   [Expected]
-   readonly partial struct ValueExpected<V, E>;
-
-   [Expected]
-   partial struct Result<V> : IExpectedTypeArguments<V, Exception>;
+   [Unexpected<string>]
+   readonly partial struct ValueExpected<V>;
 
    [ErrorCode]
    public enum NamedError { A, B }
+
 }
 
 file static class Abc {
    static void Xyz() {
-      Named.ValueExpected<int, float> e = 1;
+      Errorable<Exception> errorable = default(NullError);
+      MyExpected<int> exp = new([]);
+      Named.ValueExpected<int> e = 1;
+      DomainSpecificResult<float> result = 1;
+      e = e.SelectError(e => 1).SelectError(e => e.ToString());
    }
 }

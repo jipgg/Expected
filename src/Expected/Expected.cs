@@ -3,12 +3,18 @@ namespace Expected;
 public sealed class BadExpectedAccess : InvalidOperationException;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false)]
-public sealed class ExpectedAttribute : Attribute {
-   public string? TValue { get; set; }
-   public string? TError { get; set; }
-}
+public sealed class ExpectedAttribute : Attribute;
 
-public interface IExpectedTypeArguments<TValue, TError>
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false)]
+public sealed class ExpectedAttribute<TValue>: Attribute
+   where TValue: allows ref struct;
+
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false)]
+public sealed class ExpectedAttribute<TValue, TError>: Attribute
+   where TValue: allows ref struct
+   where TError: allows ref struct;
+
+public interface ISourceGeneratedExpectedMarker<TValue, TError>
    where TValue : allows ref struct
    where TError : allows ref struct;
 

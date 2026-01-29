@@ -1,6 +1,9 @@
+using System.Runtime.InteropServices;
 namespace Expected.Generators;
 
-record ExpectedParams(
+
+sealed record ExpectedParams(
+   string HintName,
    ClassInfo ClassInfo,
    string TValue,
    string TError,
@@ -8,69 +11,76 @@ record ExpectedParams(
 );
 [Generator]
 public sealed class Expected : IIncrementalGenerator {
-   static string MakeHintName(INamedTypeSymbol symbol, string tValue, string tError) {
-      var ns = symbol.ContainingNamespace;
-      var str = $"{(ns.IsGlobalNamespace ? "" : $"{ns.ToDisplayString()}.")}";
-      str += symbol.Name;
-      str += $"{{{tValue.Replace("global::", "")},";
-      str += $"{tError.Replace("global::", "")}}}";
-
-      return str;
-   }
    public void Initialize(IncrementalGeneratorInitializationContext context) {
-
-      context.RegisterSourceOutput(
-         context.SyntaxProvider.ForAttributeWithMetadataName(MetadataName,
-            static (node, _) => node is ClassDeclarationSyntax or StructDeclarationSyntax and { AttributeLists.Count: > 0 },
-            static (string, ExpectedParams?) (context, _) => {
-               if (context.TargetSymbol is not INamedTypeSymbol symbol) return ("", null);
-               var attr = AttributeParser.From(symbol, GetAttributeClass(context));
-               var tValue = attr.Parse<string>("TValue");
-               var tError = attr.Parse<string>("TError");
-               if (GetTypeArgumentsInterface(symbol) is { } typeArgs) {
-                  var fmt = SymbolDisplayFormat.FullyQualifiedFormat
-                     .WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers);
-                  tValue = typeArgs.TypeArguments[0].ToDisplayString(fmt);
-                  tError = typeArgs.TypeArguments[1].ToDisplayString(fmt);
-               }
-               var resolvedTValue = tValue
-                  ?? (symbol.Arity >= 1
-                     ? symbol.TypeParameters[0].Name
-                     : null);
-               if (resolvedTValue is null) return ("", null);
-               var resolvedTError = tError
-                  ?? (symbol.Arity >= 2
-                     ? symbol.TypeParameters[1].Name
-                     : (symbol.Arity >= 1 && tValue != symbol.TypeParameters[0].Name
-                        ? symbol.TypeParameters[0].Name
-                        : null));
-               if (resolvedTError is null) return ("", null);
-               return (
-                  MakeHintName(symbol, resolvedTValue, resolvedTError),
-                  new ExpectedParams(
-                     ClassInfo: ClassInfo.Create(context.TargetNode, symbol),
-                     TValue: resolvedTValue ?? "TValue",
-                     TError: resolvedTError ?? "TError",
-                     IsCanonical: IsCanonicalType(symbol)
-               ));
-            }).Where(static e => e.Item2 is not null),
-         static (context, e) => {
-            var (hintName, args) = e;
-            context.AddSource(
-               $"{hintName}.g.cs",
-               ExpectedTemplate.Apply(args!)
+      var provider = context.SyntaxProvider.CreateSyntaxProvider(
+         static (node, _) => {
+            if (node is not TypeDeclarationSyntax type) return false;
+            if (type is RecordDeclarationSyntax or InterfaceDeclarationSyntax) return false;
+            foreach (var modifier in type.Modifiers) {
+               if (modifier.IsKind(SyntaxKind.PartialKeyword)) return true;
+            }
+            return false;
+         },
+         static (context, _) => {
+            var declaredSymbol = context.SemanticModel.GetDeclaredSymbol(context.Node);
+            if (declaredSymbol is not INamedTypeSymbol symbol) return null;
+            if (Local.ResolveTypeArguments(symbol) is not { } typeArgs) return null;
+            var ns = declaredSymbol.ContainingNamespace;
+            return new ExpectedParams(
+               HintName: Common.ToHintName(symbol, typeArgs),
+               ClassInfo: ClassInfo.Create(context.Node, symbol),
+               TValue: Common.Format(typeArgs.TValue),
+               TError: Common.Format(typeArgs.TError),
+               IsCanonical: Local.IsCanonicalType(symbol)
             );
-         });
-
-   }
-   static INamedTypeSymbol? GetTypeArgumentsInterface(INamedTypeSymbol symbol) {
-      return symbol.Interfaces.SingleOrDefault(static e => e.Name == "IExpectedTypeArguments"
-         && e.ContainingNamespace.ToDisplayString() == "Expected");
-   }
-   static bool IsCanonicalType(INamedTypeSymbol symbol) {
-      return symbol.GetAttributes().Any(e => e.AttributeClass?.ToDisplayString() == "Expected.Internal.IsCanonicalAttribute");
+         }
+      ).Where(static t => t is not null);
+      context.RegisterSourceOutput(provider, static (context, args) => {
+         context.AddSource(args!.HintName, ExpectedTemplate.Apply(args!));
+      });
    }
    const string MetadataName = "Expected.ExpectedAttribute";
-   static INamedTypeSymbol? GetAttributeClass(GeneratorAttributeSyntaxContext context)
-      => context.SemanticModel.Compilation.GetTypeByMetadataName(MetadataName);
 }
+
+readonly record struct ExpectedTypeArguments(ITypeSymbol TValue, ITypeSymbol TError);
+file static class Local {
+   public static AttributeData? GetAttributeData(INamedTypeSymbol symbol, string name, string @namespace = "Expected")
+      => symbol.GetAttributes()
+      .Where(e => e.AttributeClass?.Name == name
+         && e.AttributeClass?.ContainingNamespace.ToDisplayString() is "Expected")
+      .SingleOrDefault();
+
+   public static bool IsCanonicalType(INamedTypeSymbol symbol) => symbol.GetAttributes()
+      .Any(e => e.AttributeClass?.ToDisplayString() == "Expected.Internal.IsCanonicalAttribute");
+
+   public static ExpectedTypeArguments? ResolveTypeArguments(INamedTypeSymbol symbol) {
+      const string expectedAttrName = "ExpectedAttribute";
+      var interfaceMarker = symbol.Interfaces
+         .SingleOrDefault(e => e.MetadataName == "ISourceGeneratedExpectedMarker`2");
+      if (interfaceMarker is not null) {
+         return new(interfaceMarker.TypeArguments[0], interfaceMarker.TypeArguments[1]);
+      }
+      if (symbol.Arity is 0) {
+         var attribute = GetAttributeData(symbol, expectedAttrName);
+         if (attribute?.AttributeClass is null or { Arity: not 2 }) return null;
+         var typeArgs = attribute.AttributeClass.TypeArguments;
+         return new(typeArgs[0], typeArgs[1]);
+      } else if (symbol.Arity is 1) {
+         var value = GetAttributeData(symbol, expectedAttrName);
+         if (value is { AttributeClass.Arity: not 1 }) return null;
+         if (value?.AttributeClass is not null) {
+            return new(value.AttributeClass.TypeArguments[0], symbol.TypeArguments[0]);
+         }
+         var error = GetAttributeData(symbol, "UnexpectedAttribute");
+         if (error is { AttributeClass.Arity: not 1 }) return null;
+         if (error?.AttributeClass is null) return null;
+         return new(symbol.TypeArguments[0], error.AttributeClass.TypeArguments[0]);
+      } else if (symbol.Arity is 2) {
+         var attribute = GetAttributeData(symbol, expectedAttrName);
+         if (attribute?.AttributeClass is null or { Arity: not 0 }) return null;
+         return new(symbol.TypeArguments[0], symbol.TypeArguments[1]);
+      }
+      return null;
+   }
+}
+
