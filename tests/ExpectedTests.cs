@@ -1,7 +1,8 @@
 ﻿using Expected;
 namespace Tests;
 
-using Expected = Expected<ObjFoo, ObjBar>;
+[Expects<ObjFoo>, Unexpects<ObjBar>]
+partial record Expected;
 public class Expected_Tests {
    [Fact]
    public void HasValue_when_constructed_with_value() {

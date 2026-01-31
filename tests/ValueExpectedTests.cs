@@ -1,7 +1,9 @@
 using Expected;
 namespace Tests;
 
-using ValueExpected = ValueExpected<Foo, Bar>;
+[Expected<Foo, Bar>]
+partial struct ValueExpected;
+
 public class ValueExpected_Tests {
    [Fact]
    public void HasValue_when_constructed_with_value() {

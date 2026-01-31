@@ -1,4 +1,3 @@
-using static Expected.UnexpectedFunction;
 using System.Runtime.InteropServices;
 using Expected;
 namespace Tests;

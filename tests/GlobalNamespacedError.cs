@@ -2,67 +2,32 @@ using Expected;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Numerics;
-interface IHasPosition
-{
-    int X { get; }
-    int Y { get; }
-    (int X, int Y) Position => (X, Y);
-}
-static class HasPosition {
-   extension<T>(T self) where T: IHasPosition {
-      public (int X, int Y) Position => self.Position;
-   }
-}
-interface IVirtual {
-   int Value { get; }
-   int Virtual => Value;
-}
-interface IStatic<T> where T : IStatic<T> {
-   int Value { get; }
-   static virtual int Static(T self) => self.Value;
-}
-readonly struct WithOverrides(int value) : IStatic<WithOverrides>, IVirtual {
-   public int Value => value;
-   public int Virtual => Value;
-   public static int Static(WithOverrides self) => 123;
-}
-readonly struct WithDefaults(int value) : IStatic<WithDefaults>, IVirtual {
-   public int Value => value;
-}
-
-record struct Something(int X, int Y): IHasPosition;
-record SomethingClass(int X, int Y): IHasPosition;
-// struct SomethingPositionGetterImpl : IHasPosition<Something> {
-//    public static (int, int) Position(in Something self) => (self.X, self.Y);
-//    public static (int, int) DynPosition(IDynHasPosition self) => Position((Something)self);
-//    // public static (int, int) Position(in Something self) => (self.X, self.Y);
-//    // public static Func<object, (int X, int Y)> Dyn => static o => {
-//    //    return Func
-//    // };
-// }
-// static class Ext {
-//    extension(Something self) {
-//    }
-// }
 
 [ErrorCode(MessageImpl = MessageImplOptions.FullName)]
 public enum GlobalNamespacedError { A, B }
 
 readonly struct NullError;
+record DomainSpecificError;
 
 [Expects<NullError>]
 sealed partial class Errorable<TError>;
 
-partial struct Result<T, E>: IExpected<Result<T, E>, T, E>
-where E: Exception;
-partial struct Result<T>: IExpected<Result<T>, T, Exception>;
-
-partial struct Mine: IExpected<Mine, int, float>;
-
-record DomainSpecificError;
-
 [Unexpects<DomainSpecificError>]
-partial struct DomainSpecificResult<T>;
+partial record DomainSpecificResult<T>;
+
+[Expects<int>]
+[Unexpects<float>]
+sealed partial class Ex;
+
+readonly partial record struct SomeResult : IExpected<SomeResult, int, float>;
+
+sealed partial class Ex<T, E> : IExpected<Ex<T, E>, T, E>;
+
+partial struct Result<T, E> : IExpected<Result<T, E>, T, E> where E : Exception {
+   public static implicit operator Result<T>(Result<T, E> r) => r ? new(+r) : new(default, -r);
+}
+partial struct Result<T> : IExpected<Result<T>, T, Exception>;
+
 
 partial struct MyExpected<T> : IExpected<MyExpected<T>, List<T>, Exception>;
 
@@ -80,18 +45,21 @@ file static class Abc {
    static Result<string, InvalidOperationException> DoSomethingString() => "";
    static Result<float> DoSomethingElse() => DoSomething()
       .AndThen<int>(static v => DoSomethingString()
-            .Select(e => 1))
+         .Select(static e => 1))
       .SelectError(e => e.InnerException)
       .Select<float>(static (scoped in v) => v);
    static void Xyz() {
+      Result<int, InvalidOperationException> res2 = 1;
+      Result<int> res = res2;
+      res2 = res.SelectError(e => (InvalidOperationException)e);
+      Ex<int, Exception> e = 1;
+      SomeResult rrr = 1;
       Errorable<Exception> errorable = default(NullError);
       MyExpected<int> exp = new([]);
-      Named.ValueExpected<int> e = 1;
-      var s = new Something(1, 2);
-      var c = new SomethingClass(1, 2);
+      Named.ValueExpected<int> exx = 1;
       DomainSpecificResult<float> result = 1;
       int[] span = [1, 2, 3];
-      e = e.SelectError(static (in e) => 1)
+      exx = exx.SelectError(static (in e) => 1)
          .SelectError((in e) => e.ToString());
    }
 }
