@@ -12,7 +12,7 @@ public class ValueExpected_Tests {
 
    [Fact]
    public void HasError_when_constructed_with_unexpected() {
-      var e = new ValueExpected(new Unexpected<Bar>(new("err")));
+      ValueExpected e = new Unexpected<Bar>(new("err"));
       Assert.False(e.HasValue);
       Assert.Equal("err", e.Error.Msg);
    }
@@ -41,9 +41,8 @@ public class ValueExpected_MapTests {
 
    [Fact]
    public void Map_does_not_apply_on_error() {
-      var e = new ValueExpected(
-          new Unexpected<Bar>(new("err"))
-      ).Select(f => new Foo(f.X * 2));
+      var e = new ValueExpected(default, new("err"))
+         .Select(f => new Foo(f.X * 2));
 
       Assert.False(e.HasValue);
       Assert.Equal("err", e.Error.Msg);
@@ -51,9 +50,8 @@ public class ValueExpected_MapTests {
 
    [Fact]
    public void MapError_applies_only_on_error() {
-      var e = new ValueExpected(
-          new Unexpected<Bar>(new Bar("abc"))
-      ).SelectError(err => new Bar("xyz"));
+      var e = new ValueExpected(default, new Bar("abc"))
+         .SelectError(err => new Bar("xyz"));
 
       Assert.False(e.HasValue);
       Assert.Equal("xyz", e.Error.Msg);
@@ -66,7 +64,7 @@ public class ValueExpected_BindTests {
    [Fact]
    public void AndThen_left_identity() {
       var e = new ValueExpected(new Foo(5))
-          .AndThen(Increment);
+          .AndThen(e => Increment(e));
       Assert.Equal(6, e.Value.X);
    }
 
@@ -81,9 +79,8 @@ public class ValueExpected_BindTests {
 
    [Fact]
    public void OrElse_applies_on_error() {
-      var e = new ValueExpected(
-          new Unexpected<Bar>(new("err"))
-      ).OrElse(_ => new ValueExpected(new Foo(99)));
+      var e = new ValueExpected(default, new("err"))
+         .OrElse(_ => new ValueExpected(new Foo(99)));
 
       Assert.True(e.HasValue);
       Assert.Equal(99, e.Value.X);

@@ -6,6 +6,9 @@ namespace Tests;
 record ObjFoo(int X);
 record ObjBar(string? Msg);
 
+record TestObject(int Value);
+readonly record struct TestError(string Message);
+readonly record struct TestValue(int Value);
 readonly record struct Foo(int X);
 readonly record struct Bar(string? Msg);
 

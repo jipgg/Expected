@@ -4,7 +4,7 @@ namespace Expected;
 public sealed class CouldBeUnexpectedAttribute : Attribute;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false)]
-public sealed class UnexpectedAttribute<TError>: Attribute
+public sealed class UnexpectsAttribute<TError>: Attribute
    where TError: allows ref struct;
 
 

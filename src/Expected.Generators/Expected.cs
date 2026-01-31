@@ -6,8 +6,7 @@ sealed record ExpectedParams(
    string HintName,
    ClassInfo ClassInfo,
    string TValue,
-   string TError,
-   bool IsCanonical
+   string TError
 );
 [Generator]
 public sealed class Expected : IIncrementalGenerator {
@@ -30,8 +29,7 @@ public sealed class Expected : IIncrementalGenerator {
                HintName: Common.ToHintName(symbol, typeArgs),
                ClassInfo: ClassInfo.Create(context.Node, symbol),
                TValue: Common.Format(typeArgs.TValue),
-               TError: Common.Format(typeArgs.TError),
-               IsCanonical: Local.IsCanonicalType(symbol)
+               TError: Common.Format(typeArgs.TError)
             );
          }
       ).Where(static t => t is not null);
@@ -50,15 +48,13 @@ file static class Local {
          && e.AttributeClass?.ContainingNamespace.ToDisplayString() is "Expected")
       .SingleOrDefault();
 
-   public static bool IsCanonicalType(INamedTypeSymbol symbol) => symbol.GetAttributes()
-      .Any(e => e.AttributeClass?.ToDisplayString() == "Expected.Internal.IsCanonicalAttribute");
 
    public static ExpectedTypeArguments? ResolveTypeArguments(INamedTypeSymbol symbol) {
       const string expectedAttrName = "ExpectedAttribute";
-      var interfaceMarker = symbol.Interfaces
-         .SingleOrDefault(e => e.MetadataName == "ISourceGeneratedExpectedMarker`2");
-      if (interfaceMarker is not null) {
-         return new(interfaceMarker.TypeArguments[0], interfaceMarker.TypeArguments[1]);
+      var marker = symbol.Interfaces
+         .SingleOrDefault(e => e.MetadataName == "IExpected`3");
+      if (marker is not null) {
+         return new(marker.TypeArguments[1], marker.TypeArguments[2]);
       }
       if (symbol.Arity is 0) {
          var attribute = GetAttributeData(symbol, expectedAttrName);
@@ -66,12 +62,12 @@ file static class Local {
          var typeArgs = attribute.AttributeClass.TypeArguments;
          return new(typeArgs[0], typeArgs[1]);
       } else if (symbol.Arity is 1) {
-         var value = GetAttributeData(symbol, expectedAttrName);
+         var value = GetAttributeData(symbol, "ExpectsAttribute");
          if (value is { AttributeClass.Arity: not 1 }) return null;
          if (value?.AttributeClass is not null) {
             return new(value.AttributeClass.TypeArguments[0], symbol.TypeArguments[0]);
          }
-         var error = GetAttributeData(symbol, "UnexpectedAttribute");
+         var error = GetAttributeData(symbol, "UnexpectsAttribute");
          if (error is { AttributeClass.Arity: not 1 }) return null;
          if (error?.AttributeClass is null) return null;
          return new(symbol.TypeArguments[0], error.AttributeClass.TypeArguments[0]);
