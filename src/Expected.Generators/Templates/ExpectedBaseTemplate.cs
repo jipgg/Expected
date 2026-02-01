@@ -173,11 +173,12 @@ static class ExpectedTemplate {
                }
             """;
       }
-      Ty IExpected = new("global::Expected.IExpected");
+      Ty IExpected = new("global::Expected.IExpected", [t.GenericName, V, E]);
+      Ty IMutableExpected = new("global::Expected.IMutableExpected", [t.GenericName, V, E]);
       return $$"""
          {{(t.Namespace is null ? "" : $"namespace {t.Namespace};")}}
          [global::Expected.CouldBeUnexpected]
-         partial {{type.Keyword()}} {{t.GenericName}}: {{IExpected[t.GenericName, V, E]}} {
+         partial {{type.Keyword()}} {{t.GenericName}}: {{IExpected}}{{(type.IsReadOnly() ? "" : $", {IMutableExpected}")}} {
          {{makeField("bool", hasValue)}}
          {{storage()}}
          {{makeProperty(V, "Value",

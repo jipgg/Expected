@@ -148,6 +148,12 @@ where E : allows ref struct {
 
    static abstract V operator +(Expected expected);
    static abstract E operator -(Expected expected);
-
+}
+public interface IMutableExpected<Expected, V, E>: IExpected<Expected, V, E>
+where Expected : IMutableExpected<Expected, V, E>
+where V : allows ref struct
+where E : allows ref struct {
+   new V Value { get; set; }
+   new E Error { get; set; }
 }
 
