@@ -19,6 +19,8 @@ public readonly ref struct Unexpected<E> where E : allows ref struct {
    public Unexpected(E error) => Error = error;
 }
 
+public partial struct ValueExpected<V, E>: IExpected<ValueExpected<V, E>, V, E>;
+
 [CouldBeUnexpected]
 public readonly ref struct Expected<V, E>
 where V : allows ref struct
