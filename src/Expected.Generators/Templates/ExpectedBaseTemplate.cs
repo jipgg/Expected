@@ -133,16 +133,17 @@ static class ExpectedTemplate {
       }
       string conversions() {
          const string argName = "v";
+         Ty ExpectedMarshal = new("global::Expected.ExpectedMarshal");
          var source = $$"""
                [{{aggressiveInlining}}]
-               public static implicit operator {{t.GenericName}}({{Unexpected[E]}} unexpected)
+               public static implicit operator {{t.GenericName}}(scoped in {{Unexpected[E]}} unexpected)
                   => new(default, unexpected.Error);
                [{{aggressiveInlining}}]
-               public static implicit operator {{Expected[V, E]}}({{t.GenericName}} {{argName}})
+               public static implicit operator {{Expected[V, E]}}(scoped in {{t.GenericName}} {{argName}})
                   => {{argName}}.{{hasValue}} ? new({{argName}}.{{value}}) : new(default, {{argName}}.{{error}});
                [{{aggressiveInlining}}]
-               public static implicit operator {{t.GenericName}}({{Expected[V, E]}} {{argName}})
-                  => {{argName}}.HasValue ? new({{argName}}.Value) : new(default, {{argName}}.Error);
+               public static implicit operator {{t.GenericName}}(scoped in {{Expected[V, E]}} {{argName}})
+                  => {{argName}}.HasValue ? new({{ExpectedMarshal}}.GetValue(in {{argName}})) : new(default, {{ExpectedMarshal}}.GetError(in {{argName}}));
             """;
          if (V.ToString() is not "global::System.Object") {
             source += $"""
@@ -207,17 +208,17 @@ static class ExpectedTemplate {
             [{{aggressiveInlining}}]
             public {{Expected[V, E]}} AsExpected() => ({{Expected[V, E]}})this;
             [{{aggressiveInlining}}]
-            public static bool operator true({{t.GenericName}} expected)
+            public static bool operator true(scoped in {{t.GenericName}} expected)
                => expected.{{hasValue}};
             [{{aggressiveInlining}}]
-            public static bool operator false({{t.GenericName}} expected)
+            public static bool operator false(scoped in {{t.GenericName}} expected)
                => !expected.{{hasValue}};
             [{{aggressiveInlining}}]
-            public static bool operator !({{t.GenericName}} expected)
+            public static bool operator !(scoped in {{t.GenericName}} expected)
                => !expected.{{hasValue}};
-            public static {{V}} operator +({{t.GenericName}} expected)
+            public static {{V}} operator +(scoped in {{t.GenericName}} expected)
                => expected.{{hasValue}} ? expected.{{value}} : {{throwBadAccess}};
-            public static {{E}} operator -({{t.GenericName}} expected)
+            public static {{E}} operator -(scoped in {{t.GenericName}} expected)
                => expected.{{hasValue}} ? {{throwBadAccess}} : expected.{{error}};
             {{fluentMethods("global::Expected.ScopedInFunc")}}
             {{fluentMethods("global::System.Func")}}

@@ -19,7 +19,32 @@ public readonly ref struct Unexpected<E> where E : allows ref struct {
    public Unexpected(E error) => Error = error;
 }
 
-public partial struct ValueExpected<V, E>: IExpected<ValueExpected<V, E>, V, E>;
+public partial struct ValueExpected<V, E> : IExpected<ValueExpected<V, E>, V, E>;
+public static class ExpectedExtensions {
+   public static ValueExpected<V, E> AsValueExpected<V, E>(this scoped in Expected<V, E> expected)
+      => expected._hasValue ? new(expected._value) : new(default, expected._error);
+}
+
+public static class ExpectedMarshal {
+   [MethodImpl(AggressiveInlining)]
+   public static V GetValue<V, E>(scoped ref readonly Expected<V, E> expected)
+   where V : allows ref struct where E : allows ref struct {
+      return expected._value;
+   }
+   [MethodImpl(AggressiveInlining)]
+   public static E GetError<V, E>(scoped ref readonly Expected<V, E> expected)
+   where V : allows ref struct where E : allows ref struct {
+      return expected._error;
+   }
+   [MethodImpl(AggressiveInlining)]
+   public static V GetValue<V, E>(ref readonly ValueExpected<V, E> expected) {
+      return expected._value;
+   }
+   [MethodImpl(AggressiveInlining)]
+   public static E GetError<V, E>(ref readonly ValueExpected<V, E> expected) {
+      return expected._error;
+   }
+}
 
 [CouldBeUnexpected]
 public readonly ref struct Expected<V, E>
@@ -123,10 +148,9 @@ where E : allows ref struct {
    bool HasValue { get; }
    V ValueOr(V value) => HasValue ? Value : value;
    E ErrorOr(E error) => HasValue ? error : Error;
-   // static abstract implicit operator Expected(V value);
-   static abstract implicit operator Expected(Unexpected<E> error);
-   static abstract implicit operator Expected(Expected<V, E> expected);
-   static abstract implicit operator Expected<V, E>(Expected expected);
+   static abstract implicit operator Expected(scoped in Unexpected<E> error);
+   static abstract implicit operator Expected(scoped in Expected<V, E> expected);
+   static abstract implicit operator Expected<V, E>(scoped in Expected expected);
 
    Expected<R, E> Select<R>(ScopedInFunc<V, R> selector) where R : allows ref struct;
    Expected<V, R> SelectError<R>(ScopedInFunc<E, R> selector) where R : allows ref struct;
@@ -144,14 +168,14 @@ where E : allows ref struct {
 
    Expected<V, E> AsExpected();
 
-   static abstract bool operator true(Expected expected);
-   static abstract bool operator false(Expected expected);
-   static abstract bool operator !(Expected expected);
+   static abstract bool operator true(scoped in Expected expected);
+   static abstract bool operator false(scoped in Expected expected);
+   static abstract bool operator !(scoped in Expected expected);
 
-   static abstract V operator +(Expected expected);
-   static abstract E operator -(Expected expected);
+   static abstract V operator +(scoped in Expected expected);
+   static abstract E operator -(scoped in Expected expected);
 }
-public interface IMutableExpected<Expected, V, E>: IExpected<Expected, V, E>
+public interface IMutableExpected<Expected, V, E> : IExpected<Expected, V, E>
 where Expected : IMutableExpected<Expected, V, E>
 where V : allows ref struct
 where E : allows ref struct {

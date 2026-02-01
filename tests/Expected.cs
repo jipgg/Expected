@@ -1,7 +1,7 @@
 using Expected;
 using System.Runtime.InteropServices;
 namespace Tests.Expected;
-using Substitute = long;
+using Substitute = byte;
 
 // invariant rules
 public abstract class TestStateInvariant<Expected, V, E>
