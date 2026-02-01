@@ -19,11 +19,6 @@ public readonly ref struct Unexpected<E> where E : allows ref struct {
    public Unexpected(E error) => Error = error;
 }
 
-[StructLayout(LayoutKind.Explicit)]
-public struct Union<T, U> {
-   [FieldOffset(0)] public T A;
-   [FieldOffset(0)] public U B;
-}
 
 [CouldBeUnexpected]
 public readonly ref struct Expected<V, E>
@@ -32,9 +27,8 @@ where E : allows ref struct {
    internal readonly V _value;
    internal readonly E _error;
    internal readonly bool _hasValue;
-
-   public V Value => _value;
-   public E Error => _error;
+   public V Value => _hasValue ? _value : throw new BadExpectedAccess();
+   public E Error => _hasValue ? throw new BadExpectedAccess() : _error;
    public bool HasValue => _hasValue;
 
    [MethodImpl(AggressiveInlining)]

@@ -29,8 +29,8 @@ static class ExpectedTemplate {
       var @readonly = type is ResolvedType.Struct or ResolvedType.RefStruct ? "readonly" : "";
 
       string makeField(string typeName, string name) {
-         var ro = type.IsReadOnly() ? "readonly" : "";
-         return $"   internal {ro} {typeName} {name};";
+         var ro = type.IsReadOnly() ? "readonly " : "";
+         return $"   internal {ro}{typeName} {name};";
       }
 
       string makeProperty(string typeName, string name, string get, string set) {
@@ -49,8 +49,16 @@ static class ExpectedTemplate {
       const string expectedNs = "global::Expected";
       const string throwBadAccess = $"throw new {expectedNs}.BadExpectedAccess()";
       const string hasValue = "_hasValue";
-      const string value = "_value";
-      const string error = "_error";
+      var value = t.StorageStrategy switch {
+         StorageStrategy.SameField => "_storage",
+         StorageStrategy.Sequential => "_value",
+         _ => "_storage.Value"
+      };
+      var error = t.StorageStrategy switch {
+         StorageStrategy.SameField => "_storage",
+         StorageStrategy.Sequential => "_error",
+         _ => "_storage.Error"
+      };
       const string R = "R";
       Ty V = t.TypeArgs.V;
       Ty E = t.TypeArgs.E;
@@ -60,6 +68,45 @@ static class ExpectedTemplate {
       const string aggressiveInlining
          = "global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)";
       const string unscopedRef = "global::System.Diagnostics.CodeAnalysis.UnscopedRef";
+      string storage() {
+         const string interop = "global::System.Runtime.InteropServices";
+         const string @unsafe = "global::System.Runtime.CompilerServices.Unsafe";
+         return t.StorageStrategy switch {
+            StorageStrategy.Union => $$"""
+                  [{{interop}}.StructLayout({{interop}}.LayoutKind.Explicit)]
+                  internal {{(type.IsRefStruct() ? "ref " : "")}}struct Storage {
+                     [{{interop}}.FieldOffset(0)]
+                     public {{V}} Value;
+                     [{{interop}}.FieldOffset(0)]
+                     public {{E}} Error;
+                  }
+               {{makeField("Storage", "_storage")}}
+               """,
+            StorageStrategy.Object => $$"""
+                  internal struct Storage {
+                     internal object _storage;
+                     [{{unscopedRef}}]
+                     public ref {{V}} Value {
+                        [{{aggressiveInlining}}]
+                        get => ref {{@unsafe}}.As<object, {{V}}>(ref _storage);
+                     }
+                     [{{unscopedRef}}]
+                     public ref {{E}} Error {
+                        [{{aggressiveInlining}}]
+                        get => ref {{@unsafe}}.As<object, {{E}}>(ref _storage);
+                     }
+                  }
+               {{makeField("Storage", "_storage")}}
+               """,
+            StorageStrategy.SameField => $"""
+               {makeField(V, "_storage")}
+               """,
+            _ => $"""
+               {makeField(V, value)}
+               {makeField(E, error)}
+               """
+         };
+      }
       string fluentMethods(Ty Func, bool unscoped = false) {
          var attributes = $"[{aggressiveInlining}{(unscoped ? $",{unscopedRef}" : "")}]";
          const string argName = "f";
@@ -109,7 +156,7 @@ static class ExpectedTemplate {
                   else hash.Add({{error}}, {{EqualityComparer[E]}}.Default);
                   return hash.ToHashCode();
                }
-               public {{ro}}{{(t.Sealed ? "" : "virtual ")}}bool Equals({{t.GenericName}} other) {
+               public {{ro}}{{(t.Sealed || !type.IsClass() ? "" : "virtual ")}}bool Equals({{t.GenericName}} other) {
                   if ({{(type.IsClass() ? "other is null || " : "")}}{{hasValue}} != other.{{hasValue}}) return false;
                   return {{hasValue}}
                      ? {{EqualityComparer[V]}}.Default.Equals({{value}}, other.{{value}})
@@ -122,9 +169,8 @@ static class ExpectedTemplate {
          {{(t.Namespace is null ? "" : $"namespace {t.Namespace};")}}
          [global::Expected.CouldBeUnexpected]
          partial {{type.Keyword()}} {{t.GenericName}}: {{IExpected[t.GenericName, V, E]}} {
-         {{makeField(V, value)}}
-         {{makeField(E, error)}}
          {{makeField("bool", hasValue)}}
+         {{storage()}}
          {{makeProperty(V, "Value",
             get: $"{hasValue} ? {value} : {throwBadAccess}",
             set: $"{hasValue} = true; {value} = value"
