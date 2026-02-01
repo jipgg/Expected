@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 namespace Tests.Expected;
 using Substitute = long;
 
+// invariant rules
 public abstract class TestStateInvariant<Expected, V, E>
 where Expected : IExpected<Expected, V, E>
 where V : new()
@@ -84,7 +85,6 @@ where E : new() {
          .OrElse<E>((scoped in e) => expected));
    }
 }
-
 public abstract class TestStateInvariantMutable<Expected, V, E> : TestStateInvariant<Expected, V, E>
 where Expected : IExpected<Expected, V, E>, IMutableExpected<Expected, V, E>
 where V : new() where E : new() {
@@ -107,6 +107,7 @@ where V : new() where E : new() {
 public record ValueObject(int X) { public ValueObject() : this(1) { } }
 public class ErrorObject { public int X; }
 
+// source generated non-generic
 [Expected<ValueObject, ErrorObject>]
 public partial class ClassWithObjects;
 public class TestClassWithObjects : TestStateInvariantMutable<ClassWithObjects, ValueObject, ErrorObject>;
@@ -158,7 +159,6 @@ public class TestRecordStructWithValues : TestStateInvariant<RecordStructWithVal
 public partial struct StructWithValues;
 public class TestStructWithValues : TestStateInvariantMutable<StructWithValues, Value, Error>;
 
-
 [Expected<Value, ErrorObject>]
 public partial class ClassMixed;
 public class TestClassMixed : TestStateInvariantMutable<ClassMixed, Value, ErrorObject>;
@@ -190,6 +190,7 @@ public struct Unmanaged;
 [Expected<int, double>]
 public partial class ClassUnmanaged;
 public class TestClassUnmanaged : TestStateInvariantMutable<ClassUnmanaged, int, double> {
+   // ensuring memory layout overlaps if both are unmanaged types
    [Fact]
    public unsafe void Sizeof() {
       Assert.Equal(sizeof(ClassUnmanaged.Storage), Math.Max(sizeof(int), sizeof(double)));
@@ -242,11 +243,13 @@ public class TestStructUnmanaged : TestStateInvariantMutable<StructUnmanaged, bo
    }
 }
 
+//fully generic
 [Expected]
 public partial class ClassGeneric<V, E> where V : new() where E : new();
 public abstract class TestClassGeneric<V, E> : TestStateInvariantMutable<ClassGeneric<V, E>, V, E>
 where V : new() where E : new();
 
+// tbh these would likely always succeed if one succeeds
 public class ClassGenericWithObjects : TestClassGeneric<ValueObject, ErrorObject>;
 public class ClassGenericWithValues : TestClassGeneric<Value, Error>;
 public class ClassGenericMixed : TestClassGeneric<Value, ErrorObject>;
@@ -303,6 +306,7 @@ public class StructGenericMixed : TestStructGeneric<Value, ErrorObject>;
 public class StructGenericUnmananged : TestStructGeneric<int, float>;
 
 
+//partial generic
 [Expected<Substitute>]
 public partial class ClassGenericE<T> where T : new();
 public abstract class TestClassGenericE<T> : TestStateInvariantMutable<ClassGenericE<T>, Substitute, T> where T : new();
