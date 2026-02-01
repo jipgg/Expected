@@ -133,7 +133,10 @@ static class ExpectedTemplate {
       }
       string conversions() {
          const string argName = "v";
-         return $$"""
+         var source = $$"""
+               [{{aggressiveInlining}}]
+               public static implicit operator {{t.GenericName}}({{Unexpected[E]}} unexpected)
+                  => new(default, unexpected.Error);
                [{{aggressiveInlining}}]
                public static implicit operator {{Expected[V, E]}}({{t.GenericName}} {{argName}})
                   => {{argName}}.{{hasValue}} ? new({{argName}}.{{value}}) : new(default, {{argName}}.{{error}});
@@ -141,9 +144,15 @@ static class ExpectedTemplate {
                public static implicit operator {{t.GenericName}}({{Expected[V, E]}} {{argName}})
                   => {{argName}}.HasValue ? new({{argName}}.Value) : new(default, {{argName}}.Error);
             """;
-
+         if (V.ToString() is not "global::System.Object") {
+            source += $"""
+               [{aggressiveInlining}]
+               public static implicit operator {t.GenericName}({V} value)
+                  => new(value);
+            """;
+         }
+         return source;
       }
-      Ty IEquatable = "global::System.IEquatable";
       string equality() {
          if (!type.IsRecord()) return "";
          Ty EqualityComparer = new("global::System.Collections.Generic.EqualityComparer");
@@ -196,12 +205,6 @@ static class ExpectedTemplate {
             }
             [{{aggressiveInlining}}]
             public {{Expected[V, E]}} AsExpected() => ({{Expected[V, E]}})this;
-            [{{aggressiveInlining}}]
-            public static implicit operator {{t.GenericName}}({{V}} value)
-               => new(value);
-            [{{aggressiveInlining}}]
-            public static implicit operator {{t.GenericName}}({{Unexpected[E]}} unexpected)
-               => new(default, unexpected.Error);
             [{{aggressiveInlining}}]
             public static bool operator true({{t.GenericName}} expected)
                => expected.{{hasValue}};

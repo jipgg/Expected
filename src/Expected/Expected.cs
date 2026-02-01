@@ -19,7 +19,6 @@ public readonly ref struct Unexpected<E> where E : allows ref struct {
    public Unexpected(E error) => Error = error;
 }
 
-
 [CouldBeUnexpected]
 public readonly ref struct Expected<V, E>
 where V : allows ref struct
@@ -122,7 +121,7 @@ where E : allows ref struct {
    bool HasValue { get; }
    V ValueOr(V value) => HasValue ? Value : value;
    E ErrorOr(E error) => HasValue ? error : Error;
-   static abstract implicit operator Expected(V value);
+   // static abstract implicit operator Expected(V value);
    static abstract implicit operator Expected(Unexpected<E> error);
    static abstract implicit operator Expected(Expected<V, E> expected);
    static abstract implicit operator Expected<V, E>(Expected expected);

@@ -1,7 +1,7 @@
 ﻿using Expected;
 namespace Tests;
 
-[Expects<ObjFoo>, Unexpects<ObjBar>]
+[Expected<ObjFoo>, Unexpected<ObjBar>]
 partial record Expected;
 public class Expected_Tests {
    [Fact]

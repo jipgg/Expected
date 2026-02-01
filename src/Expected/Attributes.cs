@@ -3,19 +3,13 @@ namespace Expected;
 using static Local;
 
 [AttributeUsage(ExpectedTargets, AllowMultiple = false)]
-public sealed class UnexpectsAttribute<E> : Attribute where E : allows ref struct;
+public sealed class UnexpectedAttribute<E> : Attribute where E : allows ref struct;
 [AttributeUsage(ExpectedTargets, AllowMultiple = false)]
-public sealed class UnexpectsAttribute(string typeParameterName) : Attribute {
-   public string TypeParameterName { get; } = typeParameterName;
-}
-[AttributeUsage(ExpectedTargets, AllowMultiple = false)]
-public sealed class ExpectsAttribute<V> : Attribute where V : allows ref struct;
-[AttributeUsage(ExpectedTargets, AllowMultiple = false)]
-public sealed class ExpectsAttribute(string typeParameterName) : Attribute {
-   public string TypeParameterName { get; } = typeParameterName;
-}
+public sealed class ExpectedAttribute<V> : Attribute where V : allows ref struct;
 [AttributeUsage(ExpectedTargets, AllowMultiple = false)]
 public sealed class ExpectedAttribute<V, E>: Attribute where V: allows ref struct where E: allows ref struct;
+[AttributeUsage(ExpectedTargets, AllowMultiple = false)]
+public sealed class ExpectedAttribute: Attribute;
 
 [AttributeUsage(ExpectedTargets, AllowMultiple = false)]
 public sealed class CouldBeUnexpectedAttribute : Attribute;

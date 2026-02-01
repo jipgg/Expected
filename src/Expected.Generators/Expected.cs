@@ -53,7 +53,7 @@ sealed record ResolvedTypeArgumentSymbols(ITypeSymbol V, ITypeSymbol E) {
 sealed record ResolvedTypeArguments(string V, string E);
 // readonly record struct ExpectedTypeArguments(ITypeSymbol TValue, ITypeSymbol TError);
 file static class Local {
-   public static StorageStrategy ResolveStorageStrategy(ResolvedTypeArgumentSymbols types) {
+   public static StorageStrategy ResolveStorageStrategy(INamedTypeSymbol symbol, ResolvedTypeArgumentSymbols types) {
       if (types.V.ToDisplayString().Equals(types.E.ToDisplayString())) return StorageStrategy.SameField;
       var v = (types.V as INamedTypeSymbol);
       var e = (types.E as INamedTypeSymbol);
@@ -67,7 +67,7 @@ file static class Local {
          return StorageStrategy.Object;
       } else if (vParam?.HasReferenceTypeConstraint is true && eParam?.HasReferenceTypeConstraint is true) {
          return StorageStrategy.Object;
-      } else if (v?.IsUnmanagedType is true && e?.IsUnmanagedType is true) {
+      } else if (symbol.IsGenericType is false && v?.IsUnmanagedType is true && e?.IsUnmanagedType is true) {
          return StorageStrategy.Union;
       }
       return StorageStrategy.Sequential;
@@ -108,7 +108,7 @@ file static class Local {
          Type: type,
          TypeArgs: typeArgs,
          Sealed: node.Modifiers.Any(SyntaxKind.SealedKeyword),
-         StorageStrategy: ResolveStorageStrategy(typeArgs)
+         StorageStrategy: ResolveStorageStrategy(symbol, typeArgs)
       );
    }
    public static ResolvedTypeArgumentSymbols? ResolveTypeArguments(INamedTypeSymbol symbol) {
@@ -123,19 +123,23 @@ file static class Local {
                && e.AttributeClass?.ContainingNamespace.ToDisplayString() is "Expected")
             .SingleOrDefault();
       }
-      var expected = findAttr(symbol, "ExpectedAttribute`2")?.AttributeClass?.TypeArguments;
-      if (expected is { } expectedArgs) {
+      var expected2 = findAttr(symbol, "ExpectedAttribute`2")?.AttributeClass?.TypeArguments;
+      if (expected2 is { } expectedArgs) {
          return new(expectedArgs[0], expectedArgs[1]);
       }
-      var expectsT = findAttr(symbol, "ExpectsAttribute`1")?.AttributeClass?.TypeArguments[0];
-      var unexpectsT = findAttr(symbol, "UnexpectsAttribute`1")?.AttributeClass?.TypeArguments[0];
+      var expected1 = findAttr(symbol, "ExpectedAttribute`1")?.AttributeClass?.TypeArguments[0];
+      var unexpected1 = findAttr(symbol, "UnexpectedAttribute`1")?.AttributeClass?.TypeArguments[0];
       if (symbol.Arity is 0) {
-         if (expectsT is null || unexpectsT is null) return null;
-         return new(expectsT, unexpectsT);
+         if (expected1 is null || unexpected1 is null) return null;
+         return new(expected1, unexpected1);
       } else if (symbol.Arity is 1) {
-         if (expectsT is not null) return new(expectsT, symbol.TypeArguments[0]);
-         else if (unexpectsT is not null) return new(symbol.TypeArguments[0], unexpectsT);
+         if (expected1 is not null) return new(expected1, symbol.TypeArguments[0]);
+         else if (unexpected1 is not null) return new(symbol.TypeArguments[0], unexpected1);
          else return null;
+      } else if (symbol.Arity is 2) {
+         var expected = findAttr(symbol, "ExpectedAttribute");
+         if (expected is null) return null;
+         else return new(symbol.TypeArguments[0], symbol.TypeArguments[1]);
       }
       return null;
    }
