@@ -8,11 +8,10 @@
 		<OutputItemType>Analyzer</OutputItemType>
 		<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
 		<EnableAnalyzerReleaseTracking>true</EnableAnalyzerReleaseTracking>
-		<AnalyzerId>EX</AnalyzerId>
+		<AnalyzerId>Expected</AnalyzerId>
 		<AnalyzerVersion>0.1.0</AnalyzerVersion>
    </PropertyGroup>
    <ItemGroup>
-      <!-- <None Include="$(OutputPath)$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs/$(AssemblyName).dll" /> -->
 		<AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
 		<AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
    </ItemGroup>

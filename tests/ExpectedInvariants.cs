@@ -397,6 +397,7 @@ public class RecordStructGenericUnmanangedV : TestRecordStructGenericE<float>;
 public partial struct StructGenericV<T> where T : new();
 public abstract class TestStructGenericV<T> : TestStateInvariantMutable<StructGenericV<T>, T, Substitute> where T : new();
 
+
 public class StructGenericWithObjectV : TestStructGenericE<ErrorObject>;
 public class StructGenericWithValueV : TestStructGenericE<Error>;
 public class StructGenericUnmanangedV : TestStructGenericE<float>;

@@ -12,7 +12,7 @@ public sealed class ExpectedAttribute<V, E>: Attribute where V: allows ref struc
 public sealed class ExpectedAttribute: Attribute;
 
 [AttributeUsage(ExpectedTargets, AllowMultiple = false)]
-public sealed class CouldBeUnexpectedAttribute : Attribute;
+public sealed class MaybeUnexpectedAttribute : Attribute;
 
 public enum MessageImplOptions : byte { Partial, FullName, Name }
 [AttributeUsage(AttributeTargets.Enum, AllowMultiple = false)]
@@ -25,7 +25,5 @@ public sealed class ErrorCodeAttribute : Attribute {
 }
 
 file static class Local {
-   public const AttributeTargets ExpectedTargets =
-      System.AttributeTargets.Struct
-      | System.AttributeTargets.Class;
+   public const AttributeTargets ExpectedTargets = AttributeTargets.Struct | AttributeTargets.Class;
 }

@@ -1,20 +1,9 @@
-namespace Expected.Generators;
+namespace Expected.Meta;
 
-enum MessageImplOptions : byte {
-   Partial = 0,
-   FullName = 1,
-   Name = 2,
-}
-record ErrorCodeParams(
-   string? Namespace,
-   EnumInfo Enum,
-   string Category,
-   string? Codes,
-   string Title,
-   MessageImplOptions MessageImpl
-);
+using static ErrorCodeSourceTemplate;
+
 [Generator]
-public sealed class ErrorCode : IIncrementalGenerator {
+public sealed class ErrorCodeGenerator : IIncrementalGenerator {
    public void Initialize(IncrementalGeneratorInitializationContext context) {
       const string metadataName = "Expected.ErrorCodeAttribute";
       var provider = context.SyntaxProvider.ForAttributeWithMetadataName(
@@ -30,7 +19,7 @@ public sealed class ErrorCode : IIncrementalGenerator {
                ? (attr.Parse<string>("CodesClassName") ?? $"{name}Codes")
                : null;
             var ns = symbol.ContainingNamespace;
-            return new ErrorCodeParams(
+            return new Arguments(
                Namespace: ns.IsGlobalNamespace ? null : ns.ToDisplayString(),
                Enum: new(
                   Name: name,
@@ -47,7 +36,7 @@ public sealed class ErrorCode : IIncrementalGenerator {
          }
       ).Where(static e => e is not null);
       context.RegisterSourceOutput(provider, static (context, args) => {
-         context.AddSource($"{args!.Enum.Name}.g.cs", ErrorCodeTemplate.Apply(args));
+         context.AddSource($"{args!.Enum.Name}.g.cs", ApplySourceTemplate(args));
       });
    }
 }

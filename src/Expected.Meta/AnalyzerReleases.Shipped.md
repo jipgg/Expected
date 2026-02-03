@@ -4,4 +4,5 @@
 
 Rule ID | Category | Severity | Notes
 --------|----------|----------|--------------------
-EX001   |  Usage   |  Warning | 
+Expected_MaybeUnexpected | Expected |  Warning | 
+Expected_Incompatible | Expected |  Error | 

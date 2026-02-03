@@ -21,23 +21,33 @@
   <ItemGroup>
      <None Include="../.,/../../README.md" Pack="true" PackagePath="/" />
      <ProjectReference
-        Include="..\Expected.Analyzers\Expected.Analyzers.csproj" 
+        Include="..\Expected.Meta\Expected.Meta.csproj" 
         OutputItemType="Analyzer"
         ReferenceOutputAssembly="false"
       />
      <Content
-        Include="..\Expected.Analyzers\bin\$(Configuration)\netstandard2.0\Expected.Analyzers.dll"
+        Include="..\Expected.Meta\bin\$(Configuration)\netstandard2.0\Expected.Meta.dll"
         Pack="true"
         PackagePath="analyzers/dotnet/cs/"
       />
-     <ProjectReference
-        Include="..\Expected.Generators\Expected.Generators.csproj"
-        OutputItemType="Analyzer"
-        ReferenceOutputAssembly="false" />
-     <Content
-        Include="..\Expected.Generators\bin\$(Configuration)\netstandard2.0\Expected.Generators.dll"
-        Pack="true"
-        PackagePath="analyzers/dotnet/cs/"
-        />
+     <!-- <ProjectReference -->
+     <!--    Include="..\Expected.Analyzers\Expected.Analyzers.csproj"  -->
+     <!--    OutputItemType="Analyzer" -->
+     <!--    ReferenceOutputAssembly="false" -->
+     <!--  /> -->
+     <!-- <Content -->
+     <!--    Include="..\Expected.Analyzers\bin\$(Configuration)\netstandard2.0\Expected.Analyzers.dll" -->
+     <!--    Pack="true" -->
+     <!--    PackagePath="analyzers/dotnet/cs/" -->
+     <!--  /> -->
+     <!-- <ProjectReference -->
+     <!--    Include="..\Expected.Generators\Expected.Generators.csproj" -->
+     <!--    OutputItemType="Analyzer" -->
+     <!--    ReferenceOutputAssembly="false" /> -->
+     <!-- <Content -->
+     <!--    Include="..\Expected.Generators\bin\$(Configuration)\netstandard2.0\Expected.Generators.dll" -->
+     <!--    Pack="true" -->
+     <!--    PackagePath="analyzers/dotnet/cs/" -->
+     <!--    /> -->
   </ItemGroup>
 </Project>
