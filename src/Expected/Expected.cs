@@ -1,12 +1,13 @@
 using System.Runtime.InteropServices;
+using System.Buffers;
 namespace Expected;
 
 /// <summary>
 /// <see langword="scoped"/> <see langword="in"/> variant of <see cref="Func{T, TResult}"/>.
 /// </summary>
 public delegate R ScopedInFunc<T, out R>(scoped in T a)
-   where T : allows ref struct
-   where R : allows ref struct;
+where T : allows ref struct
+where R : allows ref struct;
 
 /// <summary>
 /// Gets thrown whenever the data of an <see cref="Expected{V, E}"/>
@@ -244,7 +245,7 @@ where E : allows ref struct {
    static abstract E operator -(scoped in Expected expected);
 }
 public interface IMutableExpected<Expected, V, E> : IExpected<Expected, V, E>
-where Expected : IMutableExpected<Expected, V, E>
+where Expected : IMutableExpected<Expected, V, E>, allows ref struct
 where V : allows ref struct
 where E : allows ref struct {
    new V Value { get; set; }

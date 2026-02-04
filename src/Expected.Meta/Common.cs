@@ -129,17 +129,48 @@ class ValueEqualityArray<T>(ImmutableArray<T> data) : IEquatable<ValueEqualityAr
    public T this[int index] { get => _data[index]; }
 }
 
+file static class AttributeDataHelpers {
+   public static object? Get(this AttributeData data, string argument) {
+      return data.NamedArguments
+         .Where(e => e.Key == argument)
+         .Select(static e =>e.Value.Value)
+         .FirstOrDefault();
+   }
+   public static object? Get(this AttributeData data, int argumentIndex) {
+      if (data.ConstructorArguments.Length < argumentIndex) {
+         return null;
+      }
+      return data.ConstructorArguments[argumentIndex];
+   }
+}
+static class AttributeDataExtensions {
+   public static T? Get<T>(this AttributeData data, string argument) where T: class {
+      return data.Get(argument) as T;
+   }
+   public static T? Get<T>(this AttributeData data, int argIdx) where T: class {
+      return data.Get(argIdx) as T;
+   }
+}
+static class AttributeDataExtensionsStruct {
+   public static T? Get<T>(this AttributeData data, string argument) where T: struct {
+      return data.Get(argument) as T?;
+   }
+   public static T? Get<T>(this AttributeData data, int argIdx) where T: struct {
+      return data.Get(argIdx) as T?;
+   }
+}
+
 readonly struct AttributeParser(AttributeData? data) {
-   public object? Parse(string argument) => data?.NamedArguments
+   public object? Named(string argument) => data?.NamedArguments
       .Where(e => e.Key == argument)
       .Select(static e => e.Value.Value)
       .SingleOrDefault();
-   public T? Parse<T>(string argument) where T : class => Parse(argument) as T ?? null;
+   public T? Named<T>(string argument) where T : class? => Named(argument) as T ?? null;
    public static AttributeParser From(ISymbol symbol, string attributeClassName)
       => new(symbol.GetAttributes().FirstOrDefault(e => e.AttributeClass?.Name == attributeClassName));
    public static AttributeParser From(ISymbol symbol, INamedTypeSymbol? attributeClass)
       => new(symbol.GetAttributes().FirstOrDefault(e => SymbolEqualityComparer.Default.Equals(e.AttributeClass, attributeClass)));
 }
 static class AttributeArgumentParserWhereStruct {
-   public static T? Parse<T>(this ref AttributeParser p, string argument) where T : struct => p.Parse(argument) as T? ?? null;
+   public static T? Named<T>(this ref AttributeParser p, string argument) where T : struct => p.Named(argument) as T? ?? null;
 }

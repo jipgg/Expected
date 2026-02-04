@@ -6,3 +6,4 @@ Rule ID | Category | Severity | Notes
 --------|----------|----------|--------------------
 Expected_MaybeUnexpected | Expected |  Warning | 
 Expected_Incompatible | Expected |  Error | 
+Expected_PartialMissing | Expected |  Warning | 

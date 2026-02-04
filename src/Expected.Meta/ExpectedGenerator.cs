@@ -5,19 +5,23 @@ namespace Expected.Meta;
 using static ExpectedSourceTemplate;
 using static AnalysisHelpers;
 
-file enum AnalysisError {
+file enum SemanticError {
    NoError = default,
    Unknown,
    CycleInStructLayout,
    Arity2AttributeMismatch,
    RefLikeNotAllowed,
 }
-file readonly record struct BadAnalysisResult(AnalysisError Error, object? Data);
+file enum SyntaxError {
+   NoError = default,
+   PartialMissing,
+}
+file readonly record struct AnalysisInfo<E>(E Error, object? Data) where E : Enum;
 file static class AnalysisHelpers {
-   public static bool Analyze(INamedTypeSymbol symbol, out BadAnalysisResult err) {
+   public static bool Analyze(INamedTypeSymbol symbol, out AnalysisInfo<SemanticError> err) {
       var typeArgs = ResolveTypeArguments(symbol, out var error);
       if (typeArgs is null) {
-         if (error is not AnalysisError.NoError) {
+         if (error is not SemanticError.NoError) {
             err = new(error, null);
             return false;
          } else {
@@ -27,33 +31,50 @@ file static class AnalysisHelpers {
       }
       return Analyze(symbol, typeArgs!, out err);
    }
-   public static bool Analyze(INamedTypeSymbol symbol, TypeSymbols typeArgs, out BadAnalysisResult err) {
+   public static bool Analyze(TypeDeclarationSyntax syntax, out AnalysisInfo<SyntaxError> err) {
+      if (syntax.Modifiers.Any(SyntaxKind.PartialKeyword)) {
+         err = default;
+         return true;
+      }
+      foreach (var list in syntax.AttributeLists) {
+         foreach (var attr in list.Attributes) {
+            var name = attr.Name.ToFullString();
+            if (name.Contains("Expected") || name.Contains("Unexpected")) {
+               err = new(SyntaxError.PartialMissing, syntax);
+               return false;
+            }
+         }
+      }
+      err = default;
+      return true;
+   }
+   public static bool Analyze(INamedTypeSymbol symbol, TypeSymbols typeArgs, out AnalysisInfo<SemanticError> err) {
       if (!symbol.IsRefLikeType) {
          switch (typeArgs) {
             case { V.IsRefLikeType: true }:
             case { V: ITypeParameterSymbol and { AllowsRefLikeType: true } }:
-               err = new(AnalysisError.RefLikeNotAllowed, typeArgs.V);
+               err = new(SemanticError.RefLikeNotAllowed, typeArgs.V);
                return false;
             case { E.IsRefLikeType: true }:
             case { E: ITypeParameterSymbol and { AllowsRefLikeType: true } }:
-               err = new(AnalysisError.RefLikeNotAllowed, typeArgs.E);
+               err = new(SemanticError.RefLikeNotAllowed, typeArgs.E);
                return false;
          }
       }
       if (symbol.TypeKind is TypeKind.Struct) {
          var comparer = SymbolEqualityComparer.Default;
          if (comparer.Equals(symbol, typeArgs.V)) {
-            err = new(AnalysisError.CycleInStructLayout, typeArgs.V);
+            err = new(SemanticError.CycleInStructLayout, typeArgs.V);
             return false;
          } else if (comparer.Equals(symbol, typeArgs.E)) {
-            err = new(AnalysisError.CycleInStructLayout, typeArgs.E);
+            err = new(SemanticError.CycleInStructLayout, typeArgs.E);
             return false;
          }
       }
       err = default;
       return true;
    }
-   public static TypeSymbols? ResolveTypeArguments(INamedTypeSymbol symbol, out AnalysisError err) {
+   public static TypeSymbols? ResolveTypeArguments(INamedTypeSymbol symbol, out SemanticError err) {
       var marker = symbol.Interfaces
          .FirstOrDefault(e => e.MetadataName == "IExpected`3");
       if (marker is not null) {
@@ -66,31 +87,35 @@ file static class AnalysisHelpers {
                && e.AttributeClass?.ContainingNamespace.ToDisplayString() is "Expected")
             .SingleOrDefault();
       }
-      var expected1 = findAttr(symbol, "ExpectedAttribute`1")?.AttributeClass?.TypeArguments[0];
-      var unexpected1 = findAttr(symbol, "UnexpectedAttribute`1")?.AttributeClass?.TypeArguments[0];
+      var expectedV = findAttr(symbol, "ExpectedAttribute`1")?.AttributeClass?.TypeArguments[0];
+      var unexpectedE = findAttr(symbol, "UnexpectedAttribute`1")?.AttributeClass?.TypeArguments[0];
       if (symbol.Arity is 0) {
-         var expected2 = findAttr(symbol, "ExpectedAttribute`2")?.AttributeClass?.TypeArguments;
-         if (expected2 is { } expectedArgs) {
+         var expectedVE = findAttr(symbol, "ExpectedAttribute`2")?.AttributeClass?.TypeArguments;
+         if (expectedVE is { } expectedArgs) {
             err = default;
             return new TypeSymbols(expectedArgs[0], expectedArgs[1]);
          }
-         if (expected1 is { } && unexpected1 is { }) {
+         if (expectedV is { } && unexpectedE is { }) {
             err = default;
-            return new(expected1, unexpected1);
+            return new(expectedV, unexpectedE);
          }
-         if (expected1 is null || unexpected1 is null) {
-            err = AnalysisError.Arity2AttributeMismatch;
+         if (expectedV is null && unexpectedE is null) {
+            err = default;
+            return null;
+         }
+         if (expectedV is null || unexpectedE is null) {
+            err = SemanticError.Arity2AttributeMismatch;
             return null;
          }
          err = default;
-         return new(expected1, unexpected1);
+         return new(expectedV, unexpectedE);
       } else if (symbol.Arity is 1) {
-         if (expected1 is not null) {
+         if (expectedV is not null) {
             err = default;
-            return new(expected1, symbol.TypeArguments[0]);
-         } else if (unexpected1 is not null) {
+            return new(expectedV, symbol.TypeArguments[0]);
+         } else if (unexpectedE is not null) {
             err = default;
-            return new(symbol.TypeArguments[0], unexpected1);
+            return new(symbol.TypeArguments[0], unexpectedE);
          }
          err = default;
          return null;
@@ -103,7 +128,7 @@ file static class AnalysisHelpers {
          err = default;
          return new(symbol.TypeArguments[0], symbol.TypeArguments[1]);
       }
-      err = AnalysisError.Unknown;
+      err = SemanticError.NoError;
       return null;
    }
 }
@@ -211,7 +236,15 @@ sealed class ExpectedGeneratorAnalyzer : DiagnosticAnalyzer {
        defaultSeverity: DiagnosticSeverity.Error,
        isEnabledByDefault: true
    );
-   public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [IncompatibleTypeArgument];
+   static readonly DiagnosticDescriptor PartialMissing = new(
+      "Expected_PartialMissing",
+      "Partial specifier is missing",
+      "Partial specified is missing on '{0}'",
+      "Expected",
+      DiagnosticSeverity.Warning,
+      true
+   );
+   public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [IncompatibleTypeArgument, PartialMissing];
 
    public override void Initialize(AnalysisContext context) {
       context.EnableConcurrentExecution();
@@ -236,15 +269,25 @@ sealed class ExpectedGeneratorAnalyzer : DiagnosticAnalyzer {
             if (attrClass.ContainingNamespace.Name is not "Expected") continue;
             if (AnalysisHelpers.Analyze(symbol, out var bad)) continue;
             report(IncompatibleTypeArgument, bad.Data, bad.Error switch {
-               AnalysisError.RefLikeNotAllowed => "target must be a ref struct",
-               AnalysisError.CycleInStructLayout => "causes a cycle in the struct layout",
-               AnalysisError.Arity2AttributeMismatch => "expects either Expected<V,E> or both Expected<V> and Unexpected<E> attributes",
-               AnalysisError.NoError => "No error",
-               AnalysisError.Unknown => "Unknown error",
+               SemanticError.RefLikeNotAllowed => "target must be a ref struct",
+               SemanticError.CycleInStructLayout => "causes a cycle in the struct layout",
+               SemanticError.Arity2AttributeMismatch => "expects either Expected<V,E> or both Expected<V> and Unexpected<E> attributes",
+               SemanticError.NoError => "No error",
+               SemanticError.Unknown => "Unknown error",
             });
             continue;
          }
 
       }, SymbolKind.NamedType);
+      context.RegisterSyntaxNodeAction(static context => {
+         if (context.Node is not TypeDeclarationSyntax syntax) return;
+         if (!Analyze(syntax, out var error)) {
+            context.ReportDiagnostic(Diagnostic.Create(
+               PartialMissing,
+               syntax.GetLocation(),
+               error.Data
+            ));
+         }
+      }, SyntaxKind.StructKeyword, SyntaxKind.RecordKeyword, SyntaxKind.ClassKeyword);
    }
 }

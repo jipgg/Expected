@@ -1,9 +1,9 @@
 namespace Expected.Meta;
 
 enum MessageImplOptions : byte {
-   Partial = 0,
-   FullName = 1,
-   Name = 2,
+   Name,
+   Partial,
+   FullName,
 }
 sealed record EnumInfo(
    string Name,
@@ -13,16 +13,16 @@ static class ErrorCodeSourceTemplate {
    public sealed record Arguments(
       string? Namespace,
       EnumInfo Enum,
-      string Category,
-      string? Codes,
+      string Visibility,
       string Title,
       MessageImplOptions MessageImpl
    );
    public static string ApplySourceTemplate(Arguments args) {
-      var (@namespace, @enum, category, codes, title, messageImpl) = args;
-      var (type, fields) = @enum;
+
+      var (type, fields) = args.Enum;
 
       const string errorCode = "global::Expected.ErrorCode";
+      var category = $"{type}Category";
 
       string expandSwitch(string method, Func<string, string> selector) => $$"""
          public override string {{method}}(int value) => ({{type}})value switch {
@@ -41,20 +41,20 @@ static class ErrorCodeSourceTemplate {
       }
       string value(string v) => $"{type}.{v}";
 
-      var getMessageImpl = messageImpl switch {
+      var getMessageImpl = args.MessageImpl switch {
          MessageImplOptions.Name => expandSwitch("GetMessage",
             name => $"""{value(name)} => "{name}","""),
          MessageImplOptions.FullName => expandSwitch("GetMessage",
-            name => $"""{value(name)} => "{(@namespace is null ? "" : $"{@namespace}.")}{value(name)}","""),
+            name => $"""{value(name)} => "{(args.Namespace is null ? "" : $"{args.Namespace}.")}{value(name)}","""),
          MessageImplOptions.Partial or _ => "",
       };
-      var @partial = messageImpl is MessageImplOptions.Partial ? " partial" : "";
+      var @partial = args.MessageImpl is MessageImplOptions.Partial ? " partial" : "";
 
       const string errorCategory = "global::Expected.ErrorCategory";
       return $$"""""
-      {{(@namespace is null ? "" : $"namespace {@namespace};")}}
+      {{(args.Namespace is null ? "" : $"namespace {args.Namespace};")}}
       public sealed{{@partial}} class {{category}}: {{errorCategory}} {
-         public override string Title => "{{title}}";
+         public override string Title => "{{args.Title}}";
       {{getMessageImpl}}
          static {{category}} _instance = null!;
          public static {{category}} Instance {
@@ -64,12 +64,7 @@ static class ErrorCodeSourceTemplate {
             }
          }
       }
-      {{(codes is not null ? $$"""
-      public static class {{codes}} {
-      {{expandStatic(1)}}
-      }
-      """ : "")}}
-      public static class ErrorCode{{type}}Extensions {
+      {{args.Visibility}} static class ErrorCode{{type}}Extensions {
          public static {{errorCode}} AsCode(this {{type}} e) => new((int)e, {{category}}.Instance);
       #if NET10_0_OR_GREATER
          extension ({{errorCategory}}) {

@@ -1,6 +1,6 @@
 # Expected
 ## Introduction
-As the repository name implies, this is strongly inspired by C++23's `std::expected` abstraction as well as `std::error_code`.
+As the repository name implies, this is strongly inspired by C++23's `std::expected` abstraction.
 `Expected` is like any other result monad/error-by-value abstraction
 that you have probably seen floating around in the C# ecosystem.
 The main idea is, with the use of implicit conversions that elegantly translates from C++ to C#,
@@ -10,8 +10,8 @@ while keeping the error path branches explicit and non-ambiguous.
 A quick, trivial parallel to exceptions:
 ```cs
 // by value 
-ValueExpected<int, Exception> Divide(int a, int b) {
-    if (b is 0) return new Unexpected<Exception>(new("Cannot divide by zero."));
+Expected<int, string> Divide(int a, int b) {
+    if (b is 0) return new Unexpected<string>("Cannot divide by zero.");
     return a / b; 
 }
 // by throwing
@@ -21,58 +21,67 @@ int Divide(int a, int b) {
 }
 ```
 This is not meant to replace exceptions, but rather to be a lighter,
-error-by-value alternative to exceptions where they deem fit. 
+error-by-value alternative to exceptions where they deem fit.
 ## Feature set
-- `Expected` type variants
-- `ErrorCode` as a lightweight polymorphic error type, mainly useful for when working with enums as errors
-- Analyzer for checking whether a potential unexpected value is unused
-- Source generators for common boilerplate code
+- `Expected<V, E>` and `ValueExpected<V, E>` type 
+- Source generators for custom expected type variants
+- `ErrorCode` as a lightweight polymorphic error type, mainly useful for when working with enums as errors.
+- Analyzer for checking whether a potentially unexpected result is unused
 
 ## Install
 [nuget link](https://www.nuget.org/packages/Expected/)
 ```sh
-dotnet package add Expected
+dotnet add package Expected
 ```
 
 ## Getting started
-A trivial code example:
+Code example:
 ```cs
 using Expected;
-using static Expected.UnexpectedFunction;
 
-static Expected<int, MyError> DoSometing(bool isExpected) {
-    if (isExpected) return 10;
-    else return new Unexpected<MyError>(MyError.SomeErrorValue);
+static Taken Take(Span<int> span, int amount) {
+   if (amount < 0) {
+      return new(default, new(TakeError.AmountIsNegative, span, amount));
+   } else if (span.Length < amount) {
+      return new Unexpected<NotTaken>(new(TakeError.SpanTooSmall, span, amount));
+   }
+   return span[..amount];
 }
-static Expected<string, MyError> DoOtherThing(int value)
-    => $"something else {value}";
-
-static MyResult<string> HandleImperatively() {
-    var did = DoSometing(false);
-    if (!did) return Unexpected(did.Error.AsCode());
-    var didOther = DoOtherThing(+did);
-    if (!didOther) return Unexpected(ErrorCode.SomeOtherErrorValue);
-    return +didOther;
+static Squared<Span<T>> Square<T>(Span<T> span, Range range) where T : INumber<T> {
+   var start = range.Start.GetOffset(span.Length);
+   var end = range.End.GetOffset(span.Length);
+   if (start > span.Length || end < 0 || end > span.Length) {
+      return new Unexpected<OutOfRange>();
+   }
+   foreach (ref var e in span[range]) e *= e;
+   return span;
 }
-static MyResult<string> HandleDeclaratively()
-    => DoSometing(false)
-        .AndThen(DoOtherThing)
-        .SelectError(static err => err.AsCode());
-
-[Unexpected<ErrorCode>]
-partial class MyResult<T>;
-[ErrorCode]
-enum MyError { SomeErrorValue, SomeOtherErrorValue }
+static Expected<ReadOnlySpan<int>, ErrorCode> DoSomeStuff(Span<int> data) {
+   return Take(data, 4)
+      .AndThen(span => Take(span, 8))
+      .OrElse((scoped in err) => err.Error switch {
+         TakeError.AmountIsNegative => Take(err.Span, -err.Amount),
+         TakeError.SpanTooSmall => err.Span,
+         _ => throw new InvalidOperationException(),
+      })
+      .SelectError(err => err.Error.AsCode())
+      .AndThen(span => Square(span, 1..10)
+         .SelectError(err => err.AsCode())
+      .Select<ReadOnlySpan<int>>(span => span));
+}
+static Result<int[]> DoSomeOtherStuff(ReadOnlySpan<int> data) {
+   var result = DoSomeStuff([.. data]);
+   if (!result) {
+      var message = result.Error.Message;
+      return new Unexpected<Exception>(new(message));
+   }
+   return new([.. +result]);
+}
 ```
 ### Expected
-The library ships with 3 variations of expected types:
-- `Expected`: general-purpose class variant
-- `ValueExpected`: struct variant
-- `RefExpected`: ref struct variant
-
-but you can also generate a new expected type
-with your own custom constraints or logic like in the following examples:
+The main idea is that you have a 'canonical' `Expected<V, E>` type, a ref struct, to which all variants are implicitly convertible to and from.
 ```cs
+
 [Unexpected<SomeDomainException>]
 partial struct SomeDomainResult<T>;
 

@@ -5,9 +5,8 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/src/">
-    <!-- <Project Path="src/Expected.Analyzers/Expected.Analyzers.csproj" /> -->
-    <!-- <Project Path="src/Expected.Generators/Expected.Generators.csproj" /> -->
     <Project Path="src/Expected.Meta/Expected.Meta.csproj" />
+    <Project Path="benchmarks/Expected.Benchmarks/Expected.Benchmarks.csproj" />
 	  <Project Path="src/Expected/Expected.csproj" />
   </Folder>
   <Folder Name="/tests/">

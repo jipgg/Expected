@@ -8,16 +8,17 @@ public sealed class ErrorCodeGenerator : IIncrementalGenerator {
       const string metadataName = "Expected.ErrorCodeAttribute";
       var provider = context.SyntaxProvider.ForAttributeWithMetadataName(
          metadataName,
-         static (node, _) => node is EnumDeclarationSyntax {AttributeLists.Count: > 0},
+         static (node, _) => node is EnumDeclarationSyntax and { AttributeLists.Count: > 0 },
          static (context, _) => {
             if (context.TargetSymbol is not INamedTypeSymbol symbol) return null;
-            var attrClass = context.SemanticModel.Compilation.GetTypeByMetadataName(metadataName);
-            var attr = AttributeParser.From(symbol, attrClass);
+            var attr = symbol.GetAttributes().FirstOrDefault(e => e.AttributeClass?.ToDisplayString() == metadataName);
+            // context.Attributes.Where(e => e.AttributeClass?.Name == "ErrorCodeAttribute");
 
+            var node = (EnumDeclarationSyntax)context.TargetNode;
+            var visibility = "internal";
+            if (node.Modifiers.Any(SyntaxKind.PublicKeyword)) visibility = "public";
+            else if (node.Modifiers.Any(SyntaxKind.PrivateKeyword)) visibility = "private";
             var name = symbol.Name;
-            var codes = attr.Parse<bool>("GenerateCodesClass") is true
-               ? (attr.Parse<string>("CodesClassName") ?? $"{name}Codes")
-               : null;
             var ns = symbol.ContainingNamespace;
             return new Arguments(
                Namespace: ns.IsGlobalNamespace ? null : ns.ToDisplayString(),
@@ -28,10 +29,9 @@ public sealed class ErrorCodeGenerator : IIncrementalGenerator {
                      .Where(e => e.IsConst)
                      .Select(static e => e.Name)
                   ])),
-               Category: attr.Parse<string>("CategoryClassName") ?? $"{name}Category",
-               Codes: codes,
-               Title: attr.Parse<string>("Title") ?? name,
-               MessageImpl: attr.Parse<byte>("MessageImpl") is byte b ? (MessageImplOptions)b : MessageImplOptions.Name
+               Visibility: visibility,
+               Title: attr?.Get<string>("Title") ?? name,
+               MessageImpl: attr?.Get<byte>(0) is byte b ? (MessageImplOptions)b : MessageImplOptions.Name
             );
          }
       ).Where(static e => e is not null);
