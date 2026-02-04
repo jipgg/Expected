@@ -10,5 +10,8 @@
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Expected\Expected.csproj" />
+  </ItemGroup>
 
 </Project>
